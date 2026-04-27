@@ -165,10 +165,16 @@ You now have your own copy at `https://github.com/<your-username>/dfe-rust-learn
 
 ### Part 7 — Clone your fork to your laptop (5 minutes)
 
-"Clone" means download a working copy you can edit. In a terminal:
+"Clone" means download a working copy you can edit. Open a terminal:
+
+- **macOS:** Terminal (in `/Applications/Utilities`).
+- **Linux:** your distro's terminal (GNOME Terminal, Konsole, etc.).
+- **Windows:** **Git Bash**, which was installed alongside Git in Part 3. Open the Start menu and type "Git Bash". Use this rather than `cmd` or PowerShell — Git Bash gives you the same Unix commands (`ls`, `~`, etc.) that the rest of this course uses.
+
+Then run:
 
 ```bash
-cd ~/Projects        # or wherever you keep code; create the folder if needed
+cd ~/Projects        # or wherever you keep code; create the folder if needed: `mkdir -p ~/Projects`
 git clone https://github.com/<your-username>/dfe-rust-learning-course.git
 cd dfe-rust-learning-course
 ```
@@ -180,9 +186,11 @@ ls
 # README.md  SETUP.md  dfe  month-1  month-2  month-3  rust-course-prd.md  ...
 ```
 
+> **Windows note.** If you do prefer PowerShell, `ls` works there too (it's aliased to `Get-ChildItem`). In the old `cmd.exe` you'd need `dir` instead, and `~` won't expand to your home folder — use `%USERPROFILE%` or just `cd C:\Users\<you>\Projects`. Git Bash sidesteps all of that, which is why we recommend it.
+
 Now open the cloned folder in VS Code:
 
-- **From the terminal:** `code .` (the dot means "the current folder"). If `code` isn't recognised, open VS Code first, then choose **View → Command Palette… → "Shell Command: Install 'code' command in PATH"**, then try again.
+- **From the terminal:** `code .` (the dot means "the current folder"). On Windows, `code` is added to your PATH by the VS Code installer. On Linux, the snap install does the same. On **macOS** only, if `code` isn't recognised, open VS Code first and choose **View → Command Palette… → "Shell Command: Install 'code' command in PATH"**, then try again.
 - **Or** in VS Code: **File → Open Folder…** and select `dfe-rust-learning-course`.
 
 The whole repo should appear in the **Explorer** panel on the left. Clicking any file (e.g. `month-1/session-01/README.md` or `src/main.rs`) opens it in a tab. The first time you open a Rust file (any `.rs`), rust-analyzer will spend 10–30 seconds indexing — you'll see "rust-analyzer: Loading…" in the bottom status bar. Wait for it to finish before editing.
