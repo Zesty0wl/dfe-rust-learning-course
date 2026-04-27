@@ -72,6 +72,7 @@ This course is designed so that completing it *automatically* satisfies all five
 | `participant-statement-template.md` | Template for the final personal statement. | **Participant**, after Session 24 |
 | `progress-summary.md` | Pre-built mapping of every session to its evidence. | — (reference only; print and bind for the assessor) |
 | [`../GLOSSARY.md`](../GLOSSARY.md) | Plain-English definitions for every technical term used in the course (compiled, immutable, borrow, GIL, MIDI, …). | — (reference only) |
+| [`../MUSIC-THEORY-PRIMER.md`](../MUSIC-THEORY-PRIMER.md) | Music theory from scratch (notes, scales, MIDI, frequencies) with a labelled piano-keyboard diagram. Read before Session 2 if you're not already a musician. | **Participant** (if needed) |
 
 ---
 

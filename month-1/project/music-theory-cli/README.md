@@ -1,5 +1,7 @@
 # `music-theory-cli` — Month 1 Project
 
+> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
+
 A command-line tool that takes a musical root note and a scale type, and prints the notes, intervals, and diatonic chord progression for that scale.
 
 ## Usage

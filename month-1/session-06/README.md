@@ -2,6 +2,8 @@
 
 > 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
 
+> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
+
 ## What You'll Learn
 
 How to define your own types with `enum`, the difference between `String` and `&str` (and why Rust has both), and a quick preview of `Vec<T>` so you can return a list of notes.

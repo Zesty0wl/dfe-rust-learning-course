@@ -1,5 +1,7 @@
 # Project: `midi-synth` — Final project (Month 3)
 
+> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
+
 > A real audio synthesiser. Plays single notes, chords, full MIDI files, **and** a connected MIDI keyboard live.
 
 This is the capstone of the course. By the end you'll have written a multi-mode CLI that:

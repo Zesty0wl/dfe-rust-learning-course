@@ -2,6 +2,8 @@
 
 > 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
 
+> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
+
 ## What You'll Learn
 
 How Rust thinks about data: declaring variables, choosing types, when (and how) values are allowed to change, and what a "12th root of two" has to do with the white key next to A on a piano.
