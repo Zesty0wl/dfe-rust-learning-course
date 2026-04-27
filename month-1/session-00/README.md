@@ -148,24 +148,9 @@ While you're there, two more highly recommended extensions:
 - **Even Better TOML** — syntax highlighting for `Cargo.toml` files.
 - **CodeLLDB** — lets you set breakpoints and step through Rust code with the debugger (you won't need this until Month 2, but install it now).
 
-#### 5c. Open the course folder in VS Code
+#### 5c. Quick smoke-test
 
-You haven't cloned the repo yet (that's Part 7), so for now just verify VS Code launches cleanly.
-
-After Part 7, you'll open the cloned repo with **File → Open Folder…** and pick `dfe-rust-learning-course`. The whole project will appear in the **Explorer** panel on the left. Clicking any file (e.g. `month-1/session-01/README.md` or `src/main.rs`) opens it in a tab.
-
-A few VS Code shortcuts worth memorising — they'll save you hours over the course:
-
-| Shortcut (Mac) | Shortcut (Windows/Linux) | What it does |
-|---|---|---|
-| `⌘P` | `Ctrl+P` | Quick-open a file by name (start typing — fuzzy search) |
-| `⌘\`` | `Ctrl+\`` | Open / close the integrated terminal (run `cargo` here without leaving the editor) |
-| `⌘B` | `Ctrl+B` | Toggle the Explorer sidebar |
-| `F12` | `F12` | Jump to the definition of whatever your cursor is on |
-| `⇧⌥F` | `Shift+Alt+F` | Format the current file (uses `rustfmt`) |
-| `⌘.` | `Ctrl+.` | Open the "Quick Fix" menu when rust-analyzer underlines an error — often a one-click fix |
-
-> **The integrated terminal is your best friend.** Press `⌘\`` (or `Ctrl+\``) and a terminal opens at the bottom of VS Code, already in the project folder. Every `cargo run` command in this course can be run there — no need to switch windows.
+Open VS Code from your applications menu — you should see a "Welcome" tab. That's all for now. We'll come back and **open the cloned course folder** in Part 7, once there's actually something to open.
 
 ### Part 6 — Fork the course repo (3 minutes)
 
@@ -200,7 +185,20 @@ Now open the cloned folder in VS Code:
 - **From the terminal:** `code .` (the dot means "the current folder"). If `code` isn't recognised, open VS Code first, then choose **View → Command Palette… → "Shell Command: Install 'code' command in PATH"**, then try again.
 - **Or** in VS Code: **File → Open Folder…** and select `dfe-rust-learning-course`.
 
-The whole repo should appear in the Explorer sidebar. The first time you open a Rust file (any `.rs`), rust-analyzer will spend 10–30 seconds indexing — you'll see "rust-analyzer: Loading…" in the bottom status bar. Wait for it to finish before editing.
+The whole repo should appear in the **Explorer** panel on the left. Clicking any file (e.g. `month-1/session-01/README.md` or `src/main.rs`) opens it in a tab. The first time you open a Rust file (any `.rs`), rust-analyzer will spend 10–30 seconds indexing — you'll see "rust-analyzer: Loading…" in the bottom status bar. Wait for it to finish before editing.
+
+A few VS Code shortcuts worth memorising — they'll save you hours over the course:
+
+| Shortcut (Mac) | Shortcut (Windows/Linux) | What it does |
+|---|---|---|
+| `⌘P` | `Ctrl+P` | Quick-open a file by name (start typing — fuzzy search) |
+| `⌘\`` | `Ctrl+\`` | Open / close the integrated terminal (run `cargo` here without leaving the editor) |
+| `⌘B` | `Ctrl+B` | Toggle the Explorer sidebar |
+| `F12` | `F12` | Jump to the definition of whatever your cursor is on |
+| `⇧⌥F` | `Shift+Alt+F` | Format the current file (uses `rustfmt`) |
+| `⌘.` | `Ctrl+.` | Open the "Quick Fix" menu when rust-analyzer underlines an error — often a one-click fix |
+
+> **The integrated terminal is your best friend.** Press `⌘\`` (or `Ctrl+\``) and a terminal opens at the bottom of VS Code, already in the project folder. Every `cargo run` command in this course can be run there — no need to switch windows. You'll use it in the next part.
 
 ### Part 8 — Make your first edit and commit (10 minutes)
 
