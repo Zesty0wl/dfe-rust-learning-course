@@ -419,7 +419,7 @@ This is the first session and it sets the tone for the entire course. It must do
    - Rust is the breakthrough: it's as fast as C, but it has a system called the *borrow checker* that prevents entire categories of bugs at compile time. It literally won't let you write certain classes of broken code.
    - Rust has been voted the "most loved programming language" on Stack Overflow for 9 consecutive years.
    - Real-world uses: the Linux kernel, Windows kernel components, Firefox, Cloudflare, Amazon, Discord (rewrote performance-critical systems from Go to Rust), and the entire WebAssembly ecosystem.
-   - The key message: "Other languages let you make mistakes. Rust makes the compiler your co-pilot."
+   - The key message: Rust catches whole classes of bugs at compile time that other languages only catch (if at all) at runtime, in production, at 3am.
 
 2. **Show the speed difference immediately.** Provide both of the following as runnable files:
 

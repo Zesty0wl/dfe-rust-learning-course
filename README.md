@@ -2,7 +2,7 @@
 
 A 24-session, 12-week Rust programming course built around music, Minecraft, and a bit of maths. Designed as a complete evidence pack for the **Duke of Edinburgh Award (DofE) Skill section** at any level — usable by any DofE participant aged ~14+.
 
-> "Other languages let you make mistakes. Rust makes the compiler your co-pilot."
+> *"A language empowering everyone to build reliable and efficient software."* — [rust-lang.org](https://www.rust-lang.org)
 
 ---
 

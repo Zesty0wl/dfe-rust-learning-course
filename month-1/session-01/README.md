@@ -8,8 +8,6 @@ Why Rust exists, why it's worth your time, and how to get a "Hello, World!" runn
 
 Programming languages have generations. **C** is the grandfather — blazing fast but dangerous; one wrong move and your program crashes or gets hacked. **Python** is the friendly modern option — easy to read, but slow and lets you do all sorts of silly things. **Rust** is the breakthrough: it's *as fast as C*, but it has a system called the **borrow checker** that prevents whole categories of bugs at compile time. Rust literally won't let you write certain classes of broken code.
 
-> "Other languages let you make mistakes. Rust makes the compiler your co-pilot."
-
 It has been voted the **most loved programming language** on Stack Overflow's annual developer survey for **nine years running**. It's used in the Linux kernel, parts of the Windows kernel, Firefox, Cloudflare, AWS, Discord (who famously rewrote performance-critical systems from Go to Rust), and the entire WebAssembly ecosystem. That's not a hobby language. That's serious infrastructure.
 
 ## Concepts Covered
