@@ -183,7 +183,7 @@ You should now see all the course files listed:
 
 ```bash
 ls
-# README.md  SETUP.md  dfe  month-1  month-2  month-3  rust-course-prd.md  ...
+# README.md  SETUP.md  GLOSSARY.md  MUSIC-THEORY-PRIMER.md  dfe  diagrams  month-1  month-2  month-3  ...
 ```
 
 > **Windows note.** If you do prefer PowerShell, `ls` works there too (it's aliased to `Get-ChildItem`). In the old `cmd.exe` you'd need `dir` instead, and `~` won't expand to your home folder — use `%USERPROFILE%` or just `cd C:\Users\<you>\Projects`. Git Bash sidesteps all of that, which is why we recommend it.
