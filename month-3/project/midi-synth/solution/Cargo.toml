@@ -1,0 +1,11 @@
+[package]
+name = "midi-synth"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hound = "3.5"
+midly = "0.5"
+midir = "0.10"
+cpal = "0.15"
+clap = { version = "4", features = ["derive"] }
