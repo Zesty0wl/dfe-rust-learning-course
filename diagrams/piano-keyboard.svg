@@ -1,144 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 610" width="1170" height="610">
-<rect width="1170" height="610" fill="#fafafa"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 655" width="1170" height="655">
+<rect width="1170" height="655" fill="#fafafa"/>
 <text x="585.0" y="38" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#222">A piano keyboard, with note names, MIDI numbers, and frequencies</text>
 <text x="585.0" y="62" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#555">Two octaves, C3 to C5. The pattern of 7 white + 5 black keys repeats forever.</text>
 <text x="585.0" y="80" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#888">An octave = 12 semitones = doubling of frequency.</text>
 <text x="585.0" y="98" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#888">A semitone = the smallest step on a piano (one key to the next, white or black).</text>
-<rect x="60" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="95.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">C3</text>
-<text x="95.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 48</text>
-<text x="95.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">130.8 Hz</text>
-<rect x="130" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="165.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">D3</text>
-<text x="165.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 50</text>
-<text x="165.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">146.8 Hz</text>
-<rect x="200" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="235.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">E3</text>
-<text x="235.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 52</text>
-<text x="235.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">164.8 Hz</text>
-<rect x="270" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="305.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">F3</text>
-<text x="305.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 53</text>
-<text x="305.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">174.6 Hz</text>
-<rect x="340" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="375.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">G3</text>
-<text x="375.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 55</text>
-<text x="375.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">196.0 Hz</text>
-<rect x="410" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="445.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">A3</text>
-<text x="445.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 57</text>
-<text x="445.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">220.0 Hz</text>
-<rect x="480" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="515.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">B3</text>
-<text x="515.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 59</text>
-<text x="515.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">246.9 Hz</text>
-<rect x="550" y="130" width="70" height="280" fill="#fff7d6" stroke="#222" stroke-width="1.5"/>
-<text x="585.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">C4</text>
-<text x="585.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 60</text>
-<text x="585.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">261.6 Hz</text>
-<rect x="620" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="655.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">D4</text>
-<text x="655.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 62</text>
-<text x="655.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">293.7 Hz</text>
-<rect x="690" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="725.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">E4</text>
-<text x="725.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 64</text>
-<text x="725.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">329.6 Hz</text>
-<rect x="760" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="795.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">F4</text>
-<text x="795.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 65</text>
-<text x="795.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">349.2 Hz</text>
-<rect x="830" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="865.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">G4</text>
-<text x="865.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 67</text>
-<text x="865.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">392.0 Hz</text>
-<rect x="900" y="130" width="70" height="280" fill="#d9efff" stroke="#222" stroke-width="1.5"/>
-<text x="935.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">A4</text>
-<text x="935.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 69</text>
-<text x="935.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">440.0 Hz</text>
-<rect x="970" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="1005.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">B4</text>
-<text x="1005.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 71</text>
-<text x="1005.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">493.9 Hz</text>
-<rect x="1040" y="130" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
-<text x="1075.0" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">C5</text>
-<text x="1075.0" y="374" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 72</text>
-<text x="1075.0" y="394" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">523.3 Hz</text>
-<rect x="109" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="130.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">C#3</text>
-<text x="130.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">49</text>
-<rect x="179" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="200.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">D#3</text>
-<text x="200.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">51</text>
-<rect x="319" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="340.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">F#3</text>
-<text x="340.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">54</text>
-<rect x="389" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="410.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">G#3</text>
-<text x="410.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">56</text>
-<rect x="459" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="480.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">A#3</text>
-<text x="480.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">58</text>
-<rect x="599" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="620.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">C#4</text>
-<text x="620.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">61</text>
-<rect x="669" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="690.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">D#4</text>
-<text x="690.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">63</text>
-<rect x="809" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="830.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">F#4</text>
-<text x="830.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">66</text>
-<rect x="879" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="900.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">G#4</text>
-<text x="900.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">68</text>
-<rect x="949" y="130" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
-<text x="970.0" y="269" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">A#4</text>
-<text x="970.0" y="287" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">70</text>
-<line x1="485.0" y1="94" x2="585.0" y2="125" stroke="#c0392b" stroke-width="2"/>
-<circle cx="585.0" cy="125" r="5" fill="#c0392b"/>
-<text x="485.0" y="86" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#c0392b">Middle C  (MIDI 60, 261.6 Hz)</text>
-<line x1="995.0" y1="94" x2="935.0" y2="125" stroke="#1f78b4" stroke-width="2"/>
-<circle cx="935.0" cy="125" r="5" fill="#1f78b4"/>
-<text x="995.0" y="86" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f78b4">A4 = 440 Hz  (MIDI 69)</text>
-<text x="60" y="440" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#222">The C major scale: a pattern of whole and half steps</text>
-<circle cx="95.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="95.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">1</text>
-<circle cx="165.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="165.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">2</text>
-<circle cx="235.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="235.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">3</text>
-<circle cx="305.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="305.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">4</text>
-<circle cx="375.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="375.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">5</text>
-<circle cx="445.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="445.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">6</text>
-<circle cx="515.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="515.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">7</text>
-<circle cx="585.0" cy="470" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
-<text x="585.0" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">8</text>
-<line x1="107.0" y1="470" x2="153.0" y2="470" stroke="#2c3e50" stroke-width="2"/>
-<text x="130.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
-<text x="130.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
-<line x1="177.0" y1="470" x2="223.0" y2="470" stroke="#2c3e50" stroke-width="2"/>
-<text x="200.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
-<text x="200.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
-<line x1="247.0" y1="470" x2="293.0" y2="470" stroke="#e67e22" stroke-width="2"/>
-<text x="270.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#e67e22">HALF</text>
-<text x="270.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">1 semi</text>
-<line x1="317.0" y1="470" x2="363.0" y2="470" stroke="#2c3e50" stroke-width="2"/>
-<text x="340.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
-<text x="340.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
-<line x1="387.0" y1="470" x2="433.0" y2="470" stroke="#2c3e50" stroke-width="2"/>
-<text x="410.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
-<text x="410.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
-<line x1="457.0" y1="470" x2="503.0" y2="470" stroke="#2c3e50" stroke-width="2"/>
-<text x="480.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
-<text x="480.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
-<line x1="527.0" y1="470" x2="573.0" y2="470" stroke="#e67e22" stroke-width="2"/>
-<text x="550.0" y="498" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#e67e22">HALF</text>
-<text x="550.0" y="512" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">1 semi</text>
-<text x="60" y="582" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#444">Every major scale follows the same W-W-H-W-W-W-H pattern of semitone steps. Start on a different note, you get a different major scale (G major, D major, …) — same shape, different position.</text>
-<text x="60" y="600" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#444">Frequency formula: <tspan font-family="Menlo, monospace" font-size="13" fill="#0a6">freq(midi) = 440 * 2 ^ ((midi - 69) / 12)</tspan>. Each semitone multiplies frequency by the 12th root of 2 (~1.0595).</text>
+<rect x="60" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="95.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">C3</text>
+<text x="95.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 48</text>
+<text x="95.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">130.8 Hz</text>
+<rect x="130" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="165.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">D3</text>
+<text x="165.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 50</text>
+<text x="165.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">146.8 Hz</text>
+<rect x="200" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="235.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">E3</text>
+<text x="235.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 52</text>
+<text x="235.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">164.8 Hz</text>
+<rect x="270" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="305.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">F3</text>
+<text x="305.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 53</text>
+<text x="305.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">174.6 Hz</text>
+<rect x="340" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="375.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">G3</text>
+<text x="375.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 55</text>
+<text x="375.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">196.0 Hz</text>
+<rect x="410" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="445.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">A3</text>
+<text x="445.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 57</text>
+<text x="445.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">220.0 Hz</text>
+<rect x="480" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="515.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">B3</text>
+<text x="515.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 59</text>
+<text x="515.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">246.9 Hz</text>
+<rect x="550" y="175" width="70" height="280" fill="#fff7d6" stroke="#222" stroke-width="1.5"/>
+<text x="585.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">C4</text>
+<text x="585.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 60</text>
+<text x="585.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">261.6 Hz</text>
+<rect x="620" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="655.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">D4</text>
+<text x="655.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 62</text>
+<text x="655.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">293.7 Hz</text>
+<rect x="690" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="725.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">E4</text>
+<text x="725.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 64</text>
+<text x="725.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">329.6 Hz</text>
+<rect x="760" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="795.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">F4</text>
+<text x="795.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 65</text>
+<text x="795.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">349.2 Hz</text>
+<rect x="830" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="865.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">G4</text>
+<text x="865.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 67</text>
+<text x="865.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">392.0 Hz</text>
+<rect x="900" y="175" width="70" height="280" fill="#d9efff" stroke="#222" stroke-width="1.5"/>
+<text x="935.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">A4</text>
+<text x="935.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 69</text>
+<text x="935.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">440.0 Hz</text>
+<rect x="970" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="1005.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">B4</text>
+<text x="1005.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 71</text>
+<text x="1005.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">493.9 Hz</text>
+<rect x="1040" y="175" width="70" height="280" fill="white" stroke="#222" stroke-width="1.5"/>
+<text x="1075.0" y="395" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#222">C5</text>
+<text x="1075.0" y="419" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#666">MIDI 72</text>
+<text x="1075.0" y="439" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">523.3 Hz</text>
+<rect x="109" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="130.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">C#3</text>
+<text x="130.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">49</text>
+<rect x="179" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="200.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">D#3</text>
+<text x="200.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">51</text>
+<rect x="319" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="340.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">F#3</text>
+<text x="340.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">54</text>
+<rect x="389" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="410.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">G#3</text>
+<text x="410.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">56</text>
+<rect x="459" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="480.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">A#3</text>
+<text x="480.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">58</text>
+<rect x="599" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="620.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">C#4</text>
+<text x="620.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">61</text>
+<rect x="669" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="690.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">D#4</text>
+<text x="690.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">63</text>
+<rect x="809" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="830.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">F#4</text>
+<text x="830.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">66</text>
+<rect x="879" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="900.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">G#4</text>
+<text x="900.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">68</text>
+<rect x="949" y="175" width="42" height="175" fill="#222" stroke="#000" stroke-width="1"/>
+<text x="970.0" y="314" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">A#4</text>
+<text x="970.0" y="332" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#ccc">70</text>
+<text x="475.0" y="132" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#c0392b">Middle C  (MIDI 60, 261.6 Hz)</text>
+<line x1="475.0" y1="138" x2="585.0" y2="169" stroke="#c0392b" stroke-width="2"/>
+<circle cx="585.0" cy="171" r="5" fill="#c0392b"/>
+<text x="1015.0" y="132" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f78b4">A4 = 440 Hz  (MIDI 69)</text>
+<line x1="1015.0" y1="138" x2="935.0" y2="169" stroke="#1f78b4" stroke-width="2"/>
+<circle cx="935.0" cy="171" r="5" fill="#1f78b4"/>
+<text x="60" y="485" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#222">The C major scale: a pattern of whole and half steps</text>
+<circle cx="95.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="95.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">1</text>
+<circle cx="165.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="165.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">2</text>
+<circle cx="235.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="235.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">3</text>
+<circle cx="305.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="305.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">4</text>
+<circle cx="375.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="375.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">5</text>
+<circle cx="445.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="445.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">6</text>
+<circle cx="515.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="515.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">7</text>
+<circle cx="585.0" cy="515" r="9" fill="#27ae60" stroke="#1e7e3f" stroke-width="1.5"/>
+<text x="585.0" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="white">8</text>
+<line x1="107.0" y1="515" x2="153.0" y2="515" stroke="#2c3e50" stroke-width="2"/>
+<text x="130.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
+<text x="130.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
+<line x1="177.0" y1="515" x2="223.0" y2="515" stroke="#2c3e50" stroke-width="2"/>
+<text x="200.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
+<text x="200.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
+<line x1="247.0" y1="515" x2="293.0" y2="515" stroke="#e67e22" stroke-width="2"/>
+<text x="270.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#e67e22">HALF</text>
+<text x="270.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">1 semi</text>
+<line x1="317.0" y1="515" x2="363.0" y2="515" stroke="#2c3e50" stroke-width="2"/>
+<text x="340.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
+<text x="340.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
+<line x1="387.0" y1="515" x2="433.0" y2="515" stroke="#2c3e50" stroke-width="2"/>
+<text x="410.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
+<text x="410.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
+<line x1="457.0" y1="515" x2="503.0" y2="515" stroke="#2c3e50" stroke-width="2"/>
+<text x="480.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#2c3e50">WHOLE</text>
+<text x="480.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">2 semis</text>
+<line x1="527.0" y1="515" x2="573.0" y2="515" stroke="#e67e22" stroke-width="2"/>
+<text x="550.0" y="543" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#e67e22">HALF</text>
+<text x="550.0" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">1 semi</text>
+<text x="60" y="627" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#444">Every major scale follows the same W-W-H-W-W-W-H pattern of semitone steps. Start on a different note, you get a different major scale (G major, D major, …) — same shape, different position.</text>
+<text x="60" y="645" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#444">Frequency formula: <tspan font-family="Menlo, monospace" font-size="13" fill="#0a6">freq(midi) = 440 * 2 ^ ((midi - 69) / 12)</tspan>. Each semitone multiplies frequency by the 12th root of 2 (~1.0595).</text>
 </svg>
