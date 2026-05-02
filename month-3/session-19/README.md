@@ -163,12 +163,16 @@ impl Iterator for Oscillator {
     fn next(&mut self) -> Option<f32> {
         let t = self.sample_index as f32 / self.sample_rate as f32;
         let phase = 2.0 * std::f32::consts::PI * self.frequency * t;
+        let cycles = self.frequency * t;
+        let frac = cycles - cycles.floor();   // 0.0 → 1.0 across each cycle
 
         let v = match self.waveform {
             Waveform::Sine     => phase.sin(),
             Waveform::Square   => if phase.sin() >= 0.0 { 1.0 } else { -1.0 },
-            Waveform::Sawtooth => 2.0 * (self.frequency * t - (self.frequency * t + 0.5).floor()),
-            Waveform::Triangle => 1.0 - 4.0 * (self.frequency * t - (self.frequency * t + 0.5).floor()).abs(),
+            // sawtooth: ramps from -1 to 1 over each cycle
+            Waveform::Sawtooth => 2.0 * frac - 1.0,
+            // triangle: 0 → 1 → 0 → -1 → 0 over each cycle
+            Waveform::Triangle => 4.0 * (frac - 0.5).abs() - 1.0,
         };
 
         self.sample_index += 1;
@@ -257,6 +261,20 @@ Curated extra material on the topics covered in this session (Closures and Itera
 - [**The Rust Book** — *Processing a Series of Items with Iterators* (13.2)](https://doc.rust-lang.org/book/ch13-02-iterators.html) — The companion chapter, with the lazy-evaluation explanation that makes everything click.
 - [**`itertools` crate** — extra adapters](https://docs.rs/itertools/latest/itertools/) — Adds `chunks`, `tuple_windows`, `cartesian_product`, and dozens more useful adapters not in `std`.
 - [**Niko Matsakis — *Closures Magic Functions***](https://smallcultfollowing.com/babysteps/blog/2014/05/13/focusing-on-ownership/) — From a Rust language designer; how closures relate to ownership.
+
+---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
 
 ---
 ## DofE Log Reminder

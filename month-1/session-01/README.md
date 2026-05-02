@@ -133,7 +133,7 @@ On the same machine: **under 1 second**, and very often under half a second.
 
 ### 2. Install Rust
 
-If you haven't already, follow [`SETUP.md`](../../../SETUP.md) for your platform. The minimum you need is `rustc --version` working in a terminal — anything 1.75 or newer is fine.
+If you haven't already, follow [`SETUP.md`](../../SETUP.md) for your platform. The minimum you need is `rustc --version` working in a terminal — anything 1.75 or newer is fine.
 
 ### 3. Your first Rust program
 
@@ -284,6 +284,20 @@ Curated extra material on the topics covered in this session (Why Rust + Pi spee
 - [**Stack Overflow Developer Survey** — Most-admired languages](https://survey.stackoverflow.co/2024/technology#admired-and-desired) — Where the 'voted most loved' claim comes from. Worth scanning the rest of the survey too.
 - [**Wikipedia — Monte Carlo method**](https://en.wikipedia.org/wiki/Monte_Carlo_method) — Background on the technique we used to estimate π. Used everywhere from physics to finance to game AI.
 - [**3Blue1Brown — *Why is pi here? And why squared?***](https://www.youtube.com/watch?v=d-o3eB9sfls) — Beautiful 18-minute video on a different way π appears in random processes. Pure maths candy.
+
+---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
 
 ---
 ## DofE Log Reminder

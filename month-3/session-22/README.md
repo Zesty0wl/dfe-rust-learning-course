@@ -6,6 +6,18 @@
 
 > *"Today we teach the synth to play music — actual songs, parsed from real `.mid` files."*
 
+> ### 🅰️🅱️ Choose your track for today
+>
+> The goal of this session is the same on both tracks: **a `.wav` file containing a multi-note tune you wrote.** Pick the path that matches your confidence with binary file formats.
+>
+> **Track A — parse a `.mid` file (the original path).**
+> Use the [`midly`](https://docs.rs/midly) crate to walk a real MIDI file's events, track time in ticks, mix multiple voices, and render to WAV. Real-world skill, more code, more debugging. Fill in `midi_file.rs` in the project. Continue reading below.
+>
+> **Track B — type a melody on the command line.**
+> Skip the binary parser. Type your tune as `"C4:0.5 D4:0.5 E4:1.0"` and render that. Same end result; same synth concepts (oscillator, envelope, mixing); about half the code. The example is in [`examples/track_b_melody/`](./examples/track_b_melody/) and it's a working program — read it, run it, modify the melody. **If you take this track, the `midly` walkthrough below doesn't apply to you — jump straight to "Track B walkthrough" further down.**
+>
+> Both tracks count for the same DofE evidence. Track B is **not the easy way out** — composing a melody by hand is just a different kind of work. Note your choice (A or B) in your session log.
+
 ## What You'll Learn
 
 - What's actually inside a `.mid` file.
@@ -106,6 +118,51 @@ file scale.wav   # → ... 44100 Hz
 
 Listen — you should hear a C-major scale played with your chosen waveform.
 
+## Track B walkthrough — type a melody on the command line
+
+Skip this section if you took Track A. If you took Track B, this is the whole session.
+
+### 1. Run the example as-is
+
+```bash
+cd month-3/session-22/examples/track_b_melody
+cargo run -- "C4:0.5 D4:0.5 E4:0.5 F4:0.5 G4:1.0" scale.wav
+```
+
+You'll get `scale.wav` — a five-note C-major scale fragment. Open it in any audio player. Same end product as Track A's `--midi-file scale.mid`, just expressed differently.
+
+### 2. Read the code (about 150 lines, single file)
+
+Open `examples/track_b_melody/src/main.rs`. The five sections are signposted with comment dividers:
+
+1. **Note parsing** — `"C#4"` → MIDI 61. Pure string handling.
+2. **`midi_to_freq` and `render_note`** — exactly the same maths as Track A's project. Sine wave, attack/release envelope to stop clicks.
+3. **`render_song`** — concatenate notes end-to-end. (Track A also mixes overlapping notes; Track B doesn't need to because melodies are sequential.)
+4. **`write_wav`** — uses the [`hound`](https://docs.rs/hound) crate to write 16-bit mono PCM.
+5. **`main`** — parse args, render, write.
+
+### 3. Run the tests
+
+```bash
+cargo test
+```
+
+There are five — they cover note parsing edge cases. Make sure they all pass before you start modifying.
+
+### 4. Modify it: write your own melody
+
+Pick a tune you can hum. Easy ones:
+
+- **Twinkle Twinkle:** `"C4:0.5 C4:0.5 G4:0.5 G4:0.5 A4:0.5 A4:0.5 G4:1.0 F4:0.5 F4:0.5 E4:0.5 E4:0.5 D4:0.5 D4:0.5 C4:1.0"`
+- **Frère Jacques (first phrase):** `"C4:0.5 D4:0.5 E4:0.5 C4:0.5 C4:0.5 D4:0.5 E4:0.5 C4:0.5"`
+- **Happy Birthday opening:** `"G4:0.375 G4:0.125 A4:0.5 G4:0.5 C5:0.5 B4:1.0"`
+
+Render at least one of these. Listen to it. Notice that without expression — no dynamics, no humanisation — even a familiar tune sounds robotic. That's a real insight about why music software is harder than it looks.
+
+### 5. (Optional) Bring in your synth project
+
+The melody-rendering example is intentionally self-contained: it duplicates the oscillator and ADSR code rather than depending on the `midi-synth` project. If you want to bridge to Track A's reference implementation, the `midi-synth` solution already supports `--note` for single-note rendering — you can build a simple shell loop that calls it once per token of your melody and concatenates the WAVs with `sox` or `ffmpeg`. That's an entirely optional stretch goal; the core session is complete after step 4.
+
 ## Common Mistakes
 
 - **Multi-track confusion**: Format-1 MIDI has multiple tracks all playing at once. Iterate every track *independently* (each has its own delta-tick clock starting at 0) and mix into the same buffer.
@@ -114,9 +171,17 @@ Listen — you should hear a C-major scale played with your chosen waveform.
 
 ## Session Challenge
 
+**Track A:**
+
 1. Find a free `.mid` file online (look for "free MIDI file site" — Bach inventions are great test material). Render it with each waveform.
 2. Print the song's total duration before rendering. Bonus points for showing the BPM.
 3. Add a `--gain 0.5` flag to attenuate the output.
+
+**Track B:**
+
+1. Render a melody you actually like (more than 8 notes). It can be from a real song, a video-game theme, or one you made up.
+2. Add a CLI flag `--waveform sine|square|triangle|sawtooth` and switch the oscillator on it. (Hint: copy `Waveform` enum and `parse_note` from the project's `synth.rs`.)
+3. Add a `--bpm` flag. Treat the duration in each token as **beats** rather than seconds, and convert beats → seconds using `60.0 / bpm`.
 
 ## Quick Reference
 
@@ -143,6 +208,20 @@ Curated extra material on the topics covered in this session (Parsing MIDI files
 - [**`midi.teragonaudio.com`** — SMF format explained byte-by-byte](http://midi.teragonaudio.com/tech/midifile.htm) — The most-readable per-byte breakdown of the file format on the web.
 
 ---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+
+---
 ## DofE Log Reminder
 
-Open `dfe/session-log.md`, find row 22, and write 1–3 sentences. Mention: how many notes were in your file and what surprised you about the file format.
+Open `dfe/session-log.md`, find row 22, and write 1–3 sentences. **Note which track you took (A or B)** and why. Mention: how many notes were in your output and what surprised you (Track A: about the file format; Track B: about how a tune sounds without expression).

@@ -38,7 +38,7 @@ Notes: C  D  E  F  G  A  B  C
 
 ## Approach
 
-A `starter/` skeleton is provided in [`../../project/music-theory-cli/starter/`](../../project/music-theory-cli/starter/). Open it, work through the TODOs, and don't peek at the [`solution/`](../../project/music-theory-cli/solution/) until you've genuinely tried.
+A `starter/` skeleton is provided in [`../project/music-theory-cli/starter/`](../project/music-theory-cli/starter/). Open it, work through the TODOs, and don't peek at the [`solution/`](../project/music-theory-cli/solution/) until you've genuinely tried.
 
 ### Suggested project structure
 
@@ -98,7 +98,7 @@ If all six checkboxes are ticked, you're done for today.
 
 ## If you get stuck
 
-- Look at the [`solution/`](../../project/music-theory-cli/solution/) — but try for at least 30 minutes first.
+- Look at the [`solution/`](../project/music-theory-cli/solution/) — but try for at least 30 minutes first.
 - Re-read Session 6 — particularly the `scale_notes` walkthrough.
 - Print debug info with `dbg!(value)` — it's like `println!("{:?}", value)` but more useful.
 
@@ -112,6 +112,20 @@ Curated extra material on the topics covered in this session (Project — Scale 
 - [**Wikipedia — Major scale**](https://en.wikipedia.org/wiki/Major_scale) — The W-W-H-W-W-W-H pattern, the seven modes derived from it, and a tidy history.
 - [**`clap` crate documentation** — command-line argument parsing](https://docs.rs/clap/latest/clap/) — The de-facto Rust CLI library. We use the *derive* style — read the *Tutorial* page first.
 - [**The Rust Book** — *An I/O Project: Building a Command Line Program* (chapter 12)](https://doc.rust-lang.org/book/ch12-00-an-io-project.html) — A complete worked example of a Rust CLI tool. Reading this alongside our project is gold.
+
+---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
 
 ---
 ## DofE Log Reminder

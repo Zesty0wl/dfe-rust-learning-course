@@ -61,7 +61,7 @@ You construct values with `ScaleType::Major`. The double-colon `::` is the path 
 ### 2. Matching on an enum
 
 ```rust
-fn semitone_pattern(scale: ScaleType) -> &'static [u8] {
+fn semitone_pattern(scale: &ScaleType) -> &'static [u8] {
     match scale {
         ScaleType::Major           => &[2, 2, 1, 2, 2, 2, 1],
         ScaleType::NaturalMinor    => &[2, 1, 2, 2, 1, 2, 2],
@@ -72,6 +72,7 @@ fn semitone_pattern(scale: ScaleType) -> &'static [u8] {
 
 A few new things:
 
+- We take `scale` by reference (`&ScaleType`) rather than by value. `ScaleType` doesn't derive `Copy`, so passing it by value would *move* it into the function and the caller couldn't use it again. Borrowing is cheap and lets the caller keep ownership.
 - The return type `&'static [u8]` is a borrowed slice of bytes that lives for the entire program (the `'static` lifetime). For a hardcoded literal like `&[2, 2, 1, 2, 2, 2, 1]`, this is exactly right.
 - The `match` is exhaustive over the three variants — try removing one and see what the compiler says.
 
@@ -175,7 +176,7 @@ println!();
 ### 8. Putting it together: `scale_notes`
 
 ```rust
-fn scale_notes(root: NoteName, scale: ScaleType) -> Vec<NoteName> {
+fn scale_notes(root: NoteName, scale: &ScaleType) -> Vec<NoteName> {
     let pattern = semitone_pattern(scale);
     let chromatic = [
         NoteName::C, NoteName::CSharp, NoteName::D, NoteName::DSharp,
@@ -192,6 +193,8 @@ fn scale_notes(root: NoteName, scale: ScaleType) -> Vec<NoteName> {
     result
 }
 ```
+
+`root` is `NoteName` by value (cheap — it's `Copy`), but `scale` is `&ScaleType` for the same reason as before.
 
 Don't worry about every line yet (`.position()` and `|&n| n == root` are iterator methods we'll cover later). The shape of it is the important bit:
 
@@ -278,6 +281,20 @@ Curated extra material on the topics covered in this session (Enums and Strings)
 - [**The Rust Book** — *Storing UTF-8 Encoded Text with Strings* (8.2)](https://doc.rust-lang.org/book/ch08-02-strings.html) — Why `String` and `&str` exist as separate types and when to use each.
 - [**It's Not Wrong That `"🤦🏼‍♂️".length == 7`** — Henri Sivonen](https://hsivonen.fi/string-length/) — Why string length is a complicated question, and how Rust's choice differs from JavaScript and Python.
 - [**`std::string` and `std::str` API docs**](https://doc.rust-lang.org/std/string/struct.String.html) — The full API for `String`. Most of the methods you'll ever want are listed at the top.
+
+---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
 
 ---
 ## DofE Log Reminder

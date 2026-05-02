@@ -3,6 +3,8 @@
 > 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
 
 > **Read this before Session 1.** This isn't one of the 24 numbered DofE sessions — it's a one-off prerequisite to get your tools working. Budget about 60–75 minutes. You won't write any Rust here, but by the end you'll have a working Rust toolchain, an editor (VS Code) configured for Rust, a GitHub account, your own fork of the course, and your first commit.
+>
+> **No log entry needed for Session 0.** Your DofE session log starts at Session 1 and runs to Session 24 — 24 entries total, not 25. Session 0 is setup, not skill practice.
 
 ---
 
@@ -68,9 +70,29 @@ rustc --version
 cargo --version
 ```
 
-Both should print a version (currently 1.95 or newer). If they don't, fix this before going any further — the rest of the course depends on it.
+Both should print a version (1.75 or newer). If they don't, fix this before going any further — the rest of the course depends on it.
 
 > **Why an installer rather than a download?** `rustup` is a *toolchain manager*. It can keep Rust up to date (`rustup update`), install nightly versions, or install Rust for cross-compilation. You'll be glad of it later.
+
+#### Add `clippy` and `rustfmt` (1 minute)
+
+Two tools every Rust developer uses daily. They ship with `rustup` but are not always installed by default — run this once now and you'll have them for the whole course:
+
+```bash
+rustup component add clippy rustfmt
+```
+
+- **`cargo clippy`** — a *linter*. Catches things `rustc` lets through but that aren't idiomatic Rust ("this `match` could be an `if let`", "you don't need this `clone()`", etc.). Run it after each session — it's the fastest way to learn good Rust style. We'll mention it again in later sessions.
+- **`cargo fmt`** — a *formatter*. Reformats your code to the canonical Rust layout (spaces, indentation, line breaks). Stops you ever arguing about style. Run it before every commit.
+
+**Verify:**
+
+```bash
+cargo clippy --version
+cargo fmt --version
+```
+
+Both should print a version. If you ever see "unknown subcommand", re-run the `rustup component add` line.
 
 ### Part 2 — Create a GitHub account (5 minutes)
 
@@ -296,6 +318,20 @@ Curated extra material on the topics covered in this session (Setup & GitHub). A
 - [**GitHub Docs — *Hello World* tutorial**](https://docs.github.com/en/get-started/start-your-journey/hello-world) — GitHub's own 10-minute walkthrough that mirrors what you just did, with screenshots.
 - [**Atlassian Git tutorials**](https://www.atlassian.com/git/tutorials) — Excellent, gentle explanations of every git concept with diagrams. Great for when a command does something surprising.
 - [**Oh Shit, Git!?!** — recovering from common mistakes](https://ohshitgit.com) — Bookmark this. Three commits in, you'll need it.
+
+---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
 
 ---
 ## DofE Log Reminder

@@ -53,7 +53,7 @@ Every project compiles and runs unmodified on Windows, macOS, and Linux.
 ├── month-1/             Foundations  →  music-theory-cli
 ├── month-2/             Intermediate →  world-generator
 ├── month-3/             Advanced     →  midi-synth
-└── resources/           Cheatsheet and glossary
+└── resources/           Cheatsheet and compiler-error reference
 ```
 
 Each `session-XX/` folder contains a `README.md` (the lesson) and an `examples/` folder of `cargo run`-able sample code.

@@ -216,6 +216,20 @@ Curated extra material on the topics covered in this session (Error Handling). A
 - [**`anyhow` crate** — application-level error type](https://docs.rs/anyhow/latest/anyhow/) — The other half of the modern pair: use `anyhow::Result` for your `main`, `thiserror`-derived enums for your library.
 
 ---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+
+---
 ## DofE Log Reminder
 
 Row 13. You're 13/24 — over halfway through.

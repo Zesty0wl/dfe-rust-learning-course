@@ -11,6 +11,19 @@
 
 Describe the synthesiser. What can it do? Can it read `.mid` files and render WAVs? Did you get live MIDI input working? What does it sound like? (You can attach a short WAV file or describe it in words.)
 
+If you took **Track B** for sessions 22 or 23, mention it here too: a synth driven by typed melodies and chord progressions is just as real as one driven by `.mid` files and a USB keyboard — describe what it produces.
+
+---
+
+### Track choices (sessions 22 & 23)
+
+Sessions 22 and 23 had a Track A / Track B fork. Note which track you took for each, and one or two sentences on **why**. There's no right answer; the assessor's looking for honest self-knowledge here.
+
+- **Session 22:** Track [ A / B ] — because…
+- **Session 23:** Track [ A / B ] — because…
+
+If you switched tracks partway, or completed both, say so.
+
 ---
 
 ### Skills I used

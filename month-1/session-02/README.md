@@ -253,6 +253,20 @@ Curated extra material on the topics covered in this session (Variables, Types, 
 - [**What Every Programmer Should Know About Floating-Point**](https://floating-point-gui.de) — A friendly version of the famous Goldberg paper. Read this before you ever compare two `f64`s with `==`.
 
 ---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+
+---
 ## DofE Log Reminder
 
 > 📝 Session 2 done. Open [`dfe/session-log.md`](../../dfe/session-log.md), find the Session 2 block, and fill it in. What clicked? What didn't? Five minutes, while it's fresh.

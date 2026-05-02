@@ -28,6 +28,22 @@ The code is split into small files. Each session adds one of them.
 
 You won't be writing all this from scratch in one go. Each session you'll add one file (or one feature) and you'll see it working before you move on.
 
+### 🅰️🅱️ Track A vs Track B (sessions 22 & 23)
+
+Sessions 22 and 23 each offer a **Track B** alternative for participants who want a less hardware/binary-format-heavy path:
+
+| Session | Track A (default)              | Track B (alternative)                          |
+|---------|--------------------------------|------------------------------------------------|
+| **22**  | Parse `.mid` files with `midly` | Type a melody on the CLI: `"C4:0.5 D4:0.5 …"` |
+| **23**  | Live MIDI keyboard + threads    | Render chord progressions: `"Cmaj:2 Fmaj:2 …"` |
+
+Both tracks meet the same learning outcomes (oscillators, envelopes, additive mixing, WAV output). Track B's working examples live alongside their session READMEs:
+
+- `month-3/session-22/examples/track_b_melody/`
+- `month-3/session-23/examples/track_b_progression/`
+
+Session 24 (`--chord` mode) and Session 21 (`--note` mode) work the same way for both tracks. The reference `solution/` here implements Track A; if you take Track B you don't need everything in `solution/` — that's fine.
+
 ---
 
 ## Folder layout

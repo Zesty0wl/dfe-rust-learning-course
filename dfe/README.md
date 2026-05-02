@@ -73,6 +73,7 @@ This course is designed so that completing it *automatically* satisfies all five
 | `progress-summary.md` | Pre-built mapping of every session to its evidence. | — (reference only; print and bind for the assessor) |
 | [`../GLOSSARY.md`](../GLOSSARY.md) | Plain-English definitions for every technical term used in the course (compiled, immutable, borrow, GIL, MIDI, …). | — (reference only) |
 | [`../MUSIC-THEORY-PRIMER.md`](../MUSIC-THEORY-PRIMER.md) | Music theory from scratch (notes, scales, MIDI, frequencies) with a labelled piano-keyboard diagram. Read before Session 2 if you're not already a musician. | **Participant** (if needed) |
+| [`../resources/compiler-errors.md`](../resources/compiler-errors.md) | The most common Rust compiler errors translated into plain English, with fixes. Linked from every session's "Stuck?" footer. | **Participant** (when stuck) |
 
 ---
 

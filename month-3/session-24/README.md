@@ -6,6 +6,14 @@
 
 > *"Final session. Today we polish the CLI, add chord mode, make sure polyphony works properly, and reflect on the road from `Hello, world!` to a working synthesiser."*
 
+> ### 🅰️🅱️ Tracks converge here
+>
+> If you took **Track A** in sessions 22 and 23 (parsed `.mid` files, built live MIDI), `--chord` mode is the natural finishing touch — a fourth, simpler mode that completes the CLI.
+>
+> If you took **Track B** (typed melodies and chord progressions to WAV), today's `--chord` mode is the natural extension of yesterday's `--progression` example — same `chord_intervals`, same additive mixing, just one chord instead of many. You can either work in the project's `starter/` or extend yesterday's `track_b_progression` example. Both count.
+>
+> The **What You've Built** retrospective at the end is written for both tracks.
+
 ## What You'll Learn
 
 - Designing a clean CLI with `clap`'s `#[derive(Parser)]`.
@@ -130,14 +138,15 @@ A `dom7` chord wants to resolve down a fifth — try playing G7 then C major bac
 
 ## What You've Built
 
-Look back. In **session 1** your program said `Hello, world!`. In **session 24**:
+Look back. In **session 1** your program said `Hello, world!`. In **session 24** you have a working software synthesiser that:
 
-- It synthesises four waveforms from first principles.
-- It applies an ADSR envelope you understand inch-by-inch.
-- It writes valid WAV files.
-- It parses arbitrary MIDI files and renders them.
-- It listens to a real MIDI keyboard and plays through real speakers — handling threading, audio callbacks, and OS APIs cleanly.
-- It exposes all of this through a tidy `clap` CLI.
+- Synthesises four waveforms from first principles.
+- Applies an ADSR envelope you understand inch-by-inch.
+- Writes valid WAV files.
+- Renders multi-note music to audio (a `.mid` file if you took Track A; a typed melody and chord progression if you took Track B).
+- Exposes everything through a tidy `clap` CLI.
+
+If you took Track A in session 23, your synth *also* listens to a real MIDI keyboard and plays through real speakers — handling threading, audio callbacks, and OS APIs cleanly. That's a non-trivial systems-programming win.
 
 You also built two earlier projects (`music-theory-cli`, `world-generator`), so you have **three** real Rust programs on your laptop. None of those are toys. People sell software like this.
 
@@ -164,6 +173,20 @@ Curated extra material on the topics covered in this session (Polyphony, `--chor
 - [**Rustlings** — interactive practice problems](https://github.com/rust-lang/rustlings) — Official exercise set. Run through the chapters that match areas you found hard in this course; it's the best drill.
 
 ---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+
+---
 ## DofE Log Reminder
 
 Open `dfe/session-log.md`, find row 24, and write a longer entry today (5–10 sentences). This is your **final reflection**:
@@ -173,4 +196,4 @@ Open `dfe/session-log.md`, find row 24, and write a longer entry today (5–10 s
 - Show one of the WAVs to a parent / friend / supervisor — what did they say?
 - What will you build next?
 
-Then update `dfe/skill-evidence.md` with the final-week reflection and `dfe/final-presentation.md` if you're ready. Well done. 🎚️
+Then complete [`dfe/milestone-3-reflection.md`](../../dfe/milestone-3-reflection.md) and write your final personal statement using [`dfe/participant-statement-template.md`](../../dfe/participant-statement-template.md). Print everything, hand the binder to your assessor, and you're done. Well done. 🎚️

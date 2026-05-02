@@ -275,6 +275,20 @@ Curated extra material on the topics covered in this session (Pattern matching a
 - [**The Rust Reference** — *Pattern syntax*](https://doc.rust-lang.org/reference/patterns.html) — The exhaustive grammar. Reach for this when something unusual works (or refuses to).
 
 ---
+
+## Stuck?
+
+You're not the first. Three places that work when you're properly stuck:
+
+- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
+- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
+- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
+
+When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
+
+Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+
+---
 ## DofE Log Reminder
 
 > 📝 Session 5 done. `match` is one of the most loved features of Rust — was it intuitive? What did you build with it? Five minutes in [`dfe/session-log.md`](../../dfe/session-log.md).
