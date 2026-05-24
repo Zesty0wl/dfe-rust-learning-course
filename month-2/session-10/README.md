@@ -213,7 +213,9 @@ enum CellType {
 }
 ```
 
-`cargo check` rains errors — match arms must cover the new shape. Update them:
+`cargo check` rains errors — match arms must cover the new shape. Update them.
+
+First, the `colour` match arm:
 
 ```rust
 // In CellType::colour:
@@ -226,10 +228,17 @@ CellType::Wood(char_level) => {
         1.0,
     )
 }
+```
 
-// In paint sites / selector array:
+Anywhere you previously wrote `CellType::Wood` as a value (paint sites, selector array, etc.), change it to:
+
+```rust
 CellType::Wood(0)        // pristine wood
+```
 
+And add a new `react` arm so fire chars wood over time:
+
+```rust
 // In react:
 (CellType::Fire, CellType::Wood(c)) | (CellType::Wood(c), CellType::Fire) => {
     if c >= 80 {

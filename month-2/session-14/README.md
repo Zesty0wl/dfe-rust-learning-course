@@ -198,11 +198,19 @@ enum CellType {
     // ...
     Acid,
 }
+```
 
-// colour:
+Then its colour:
+
+```rust
+// In CellType::colour:
 CellType::Acid => Color::new(0.55, 1.00, 0.30, 1.0),  // bright bilious green
+```
 
-// selector + key:
+And wire it into the selector and a hotkey:
+
+```rust
+// In your selector + key handler:
 let elements = [Sand, Water, Stone, Wood, Fire, Oil, Acid];
 if is_key_pressed(KeyCode::Key7) { selected = CellType::Acid; }
 ```

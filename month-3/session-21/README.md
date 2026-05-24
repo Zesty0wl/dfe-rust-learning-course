@@ -79,12 +79,20 @@ pub enum CellType {
     Gunpowder,
     Glass,
 }
+```
 
-// colour:
+Add their colours:
+
+```rust
+// In CellType::colour:
 CellType::Gunpowder => Color::new(0.40, 0.30, 0.25, 1.0),  // dark brown, like sand+coal
 CellType::Glass     => Color::new(0.80, 0.90, 1.00, 0.50), // pale, transparent
+```
 
-// density:
+And their densities:
+
+```rust
+// In density():
 CellType::Gunpowder => 130,
 CellType::Glass     => 220,
 ```

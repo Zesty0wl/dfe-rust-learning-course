@@ -284,9 +284,9 @@ impl AudioState {
 
 ### 8. The new `main.rs` — 5 minutes
 
-After all moves it's a clean ~25 lines:
+After all moves it's a clean ~25 lines (this depends on the six sibling modules built in steps 2–7 above — it isn't a standalone program):
 
-```rust
+```rust,ignore
 use macroquad::prelude::*;
 
 mod elements;

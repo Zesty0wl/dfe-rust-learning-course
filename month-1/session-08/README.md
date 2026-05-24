@@ -131,9 +131,9 @@ Record the source in `month-1/milestone/sand-sim-v0.1/assets/CREDITS.md`:
 - `sand.wav` — short sand-pour SFX, CC0, sourced from <freesound.org/...> on YYYY-MM-DD.
 ```
 
-Update `main` to load and play it:
+Update `main` to load and play it (the `// ...` lines show where this audio code slots into the existing main loop — not a standalone program):
 
-```rust
+```rust,ignore
 use macroquad::audio::{load_sound, play_sound_once};
 
 #[macroquad::main(window_conf)]

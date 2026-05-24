@@ -56,15 +56,21 @@ enum CellType {
     Lava,
     Ice,
 }
+```
 
-// colour:
+Add their colours:
+
+```rust
+// In CellType::colour:
 CellType::Lava => Color::new(1.00, 0.30, 0.05, 1.0),  // bright molten orange
 CellType::Ice  => Color::new(0.75, 0.90, 1.00, 0.85), // pale icy blue, slight transparency
+```
 
-// selector:
+Wire them into the selector and hotkeys:
+
+```rust
+// In your selector + key handler:
 let elements = [Sand, Water, Stone, Wood, Fire, Oil, Acid, Lava, Ice];
-
-// keys:
 if is_key_pressed(KeyCode::Key8) { selected = CellType::Lava; }
 if is_key_pressed(KeyCode::Key9) { selected = CellType::Ice;  }
 ```

@@ -135,20 +135,23 @@ for (cell_type, count) in &counts {
 
 ### 4. Add the `Steam` variant — 2 minutes
 
+Add it to the enum:
+
 ```rust
 enum CellType {
     // ...
     Steam,
 }
-
-// In colour:
-CellType::Steam => Color::new(0.85, 0.85, 0.90, 0.70),  // pale, semi-transparent
-
-// In selector + key:
-// (don't add to the selector — steam is something you *make*, not paint)
 ```
 
-Steam isn't in the player's brush palette. You make it from water plus heat.
+And the colour:
+
+```rust
+// In CellType::colour:
+CellType::Steam => Color::new(0.85, 0.85, 0.90, 0.70),  // pale, semi-transparent
+```
+
+Don't add it to the selector — steam is something you *make*, not paint.
 
 ### 5. Water boils, steam condenses — 6 minutes
 

@@ -192,12 +192,16 @@ fn update_smoke(grid: &mut Vec<Vec<Cell>>, row: usize, col: usize) {
 }
 ```
 
-And add the variant + colour:
+And add the variant:
 
 ```rust
 // In CellType enum:
 Smoke,
+```
 
+Then the colour for it:
+
+```rust
 // In CellType::colour:
 CellType::Smoke => Color::new(0.30, 0.30, 0.30, 0.65),  // semi-transparent grey
 ```

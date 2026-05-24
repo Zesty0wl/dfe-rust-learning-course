@@ -63,8 +63,12 @@ pub enum CellType {
     Iron,           // shiny grey
     Rust,           // crumbly red-brown
 }
+```
 
-// colour:
+Add their colours:
+
+```rust
+// In CellType::colour:
 CellType::Concrete    => Color::new(0.60, 0.60, 0.60, 1.0),  // mid grey
 CellType::WetConcrete => Color::new(0.50, 0.55, 0.55, 1.0),  // wet, slightly darker
 CellType::Iron        => Color::new(0.70, 0.70, 0.75, 1.0),  // silvery

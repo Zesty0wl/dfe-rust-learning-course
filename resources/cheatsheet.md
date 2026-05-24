@@ -180,10 +180,10 @@ match (x, y) {
 
 // Destructure enums
 match cell.cell_type {
-    CellType::Empty => /* ... */,
-    CellType::Sand | CellType::Gunpowder => /* falls */,
-    CellType::Fire | CellType::OilFire => /* burns */,
-    _ => /* other */,
+    CellType::Empty => { /* nothing */ }
+    CellType::Sand | CellType::Gunpowder => { /* falls */ }
+    CellType::Fire | CellType::OilFire => { /* burns */ }
+    _ => { /* other */ }
 }
 
 // if let — match one variant
@@ -325,21 +325,21 @@ enum Result<T, E> { Ok(T), Err(E) }
 Common methods:
 
 ```rust
-opt.is_some();           // bool
-opt.unwrap();            // panics if None
-opt.unwrap_or(default);  // returns default if None
-opt.map(|x| x * 2);      // transform inside
-opt.and_then(|x| ...);   // chain Option-returning ops
-opt.ok_or(error_value);  // Option → Result
-opt.expect("message");   // unwrap with custom panic message
+opt.is_some();                // bool
+opt.unwrap();                 // panics if None
+opt.unwrap_or(default);       // returns default if None
+opt.map(|x| x * 2);           // transform inside
+opt.and_then(|x| Some(x));    // chain Option-returning ops
+opt.ok_or(error_value);       // Option → Result
+opt.expect("message");        // unwrap with custom panic message
 
 res.is_ok();
 res.unwrap();
 res.unwrap_or(default);
-res.map(|x| ...);
-res.map_err(|e| ...);
-res.ok();                // Result → Option
-res?;                    // early-return Err
+res.map(|x| x);               // transform Ok value
+res.map_err(|e| e);           // transform Err value
+res.ok();                     // Result → Option
+res?;                         // early-return Err
 ```
 
 ---
