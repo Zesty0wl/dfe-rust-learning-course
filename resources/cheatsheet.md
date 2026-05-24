@@ -978,14 +978,14 @@ xdg-mime default code.desktop text/rust
 
 ### Wayland vs X11
 
-Most macroquad apps "just work" on both. If your sim has cursor/scroll issues on Wayland:
+macroquad (via miniquad) uses X11 directly, so on Wayland it runs through **XWayland**, which is installed by default on every mainstream Ubuntu desktop. Confirm with:
 
 ```bash
-# Force X11 for a single run
-SDL_VIDEODRIVER=x11 cargo run --release
+echo $XDG_SESSION_TYPE      # 'wayland' or 'x11'
+pgrep Xwayland              # should print a PID on Wayland sessions
 ```
 
-Or in `Cargo.toml`, depend on a specific glutin/winit backend.
+If your sim has cursor/scroll/HiDPI issues that you suspect are XWayland-specific, log out and log back in on an X11 session (gear icon on the GDM login screen → "Ubuntu on Xorg"). There's no `SDL_VIDEODRIVER`-style runtime switch — miniquad doesn't use SDL.
 
 ---
 

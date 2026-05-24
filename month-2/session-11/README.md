@@ -285,7 +285,7 @@ Today's logic doubles the per-frame work: a reactions pass, a fire-and-smoke pas
 
 - **Always `cargo run --release` on lower-end Ubuntu hardware** (Raspberry Pi 4, older Chromebooks running Linux). The release build is roughly 5–10× faster for this workload. Debug builds insert bounds-check assertions on every grid access.
 - If you've installed `rust-analyzer` from Ubuntu's apt repo, it's usually a few releases behind. Prefer `rustup component add rust-analyzer` (after which the VS Code extension picks it up automatically) — it tracks the active Rust toolchain.
-- The `fastrand` crate is deterministic given a seed. To reproduce a bug, call `fastrand::seed(42)` at the top of `main`. Useful on Linux where you can pipe `dmesg | grep ` to compare runs.
+- The `fastrand` crate is deterministic given a seed. To reproduce a bug, call `fastrand::seed(42)` at the top of `main`. On Linux you can pipe `cargo run --release 2>&1 | tee run.log` and `diff` two runs to confirm they're byte-identical.
 
 ---
 
