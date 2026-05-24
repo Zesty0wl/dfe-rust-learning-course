@@ -1,113 +1,192 @@
-# DfE Rust Learning Course
+# 12 weeks. One window. Three games.
 
-A 24-session, 12-week Rust programming course built around music, Minecraft, and a bit of maths. Designed as a complete evidence pack for the **Duke of Edinburgh Award (DofE) Skill section** at any level — usable by any DofE participant aged ~14+.
+<p align="center">
+  <img src="diagrams/hero.svg" alt="sand-sim grows from a sandbox (Month 1), into a chemistry set (Month 2), into an alchemy discovery game (Month 3)" width="100%"/>
+</p>
 
-> *"Do you want me to sit in a corner and rust, or just fall apart where I'm standing?"* — Marvin, *The Hitchhiker's Guide to the Galaxy*
+> *"It's no good thinking about the danger now — the danger will think about you when it's ready."*
+> — Terry Pratchett, *Lords and Ladies*
+
+You're about to write something that runs in a black window.
+
+By **Session 3**, sand will fall down it.
+By **Session 11**, fire will spread across wood.
+By **Session 16**, you'll be lighting oil on fire and watching the water above it boil into steam.
+By **Session 24**, it's a game — recipes to discover, secrets to find, a codex to fill in.
+
+**Same program. Twelve weeks. Three releases.** One growing thing.
+
+No music theory. No abstract maths. Just **code, run, see**.
 
 ---
 
-## Who this course is for
+## The three releases
 
-- Beginner-to-intermediate programmers (some prior exposure to Python, JavaScript, or similar helps but isn't required)
-- Pitched at a curious teenage learner; examples lean on **music**, **Minecraft**, and **maths** as familiar territory, but no specialist knowledge is assumed
-- Suitable as a structured 12-week skill activity for the **Duke of Edinburgh Award** at Bronze, Silver, or Gold level
+<p align="center">
+  <img src="diagrams/roadmap.svg" alt="A 12-week roadmap showing three releases: v0.1 sandbox at session 8, v0.2 chemistry at session 16, v1.0 alchemy game at session 24" width="100%"/>
+</p>
 
-You don't need to be a maths whiz or own a MIDI keyboard. The MIDI keyboard projects in Month 3 have file-based fallbacks.
+### Month 1 — **Sandbox** (v0.1)
+
+Click. Sand. Water. Stone. Pyramids. Reservoirs. Waterfalls.
+
+The first time the sand starts piling up by itself, you'll text someone.
+
+<p align="center">
+  <img src="diagrams/sand-falls.svg" alt="A sand pixel falling and forming a pile — the Session 3 wow moment" width="60%"/>
+</p>
+
+### Month 2 — **Chemistry** (v0.2)
+
+Five new elements. Fire spreads. Oil ignites — explosively. Lava cools. Water boils. Acid eats.
+
+Suddenly your sandbox is a place where things happen *to* each other.
+
+<p align="center">
+  <img src="diagrams/chain-reaction.svg" alt="A chain reaction: oil + fire ignites, fire heats water, water boils to steam" width="100%"/>
+</p>
+
+### Month 3 — **Alchemy** (v1.0)
+
+You wrap the chemistry in a **game**. New players start with four locked tiles. To unlock the rest they have to discover the recipes — sand + fire = glass, lava + water = stone, fire + oil = (you can guess). Three of the recipes you hide on purpose, just to mess with them.
+
+<p align="center">
+  <img src="diagrams/codex-unlock.svg" alt="A codex tile flipping from locked ??? to fully discovered glass — the Session 23 wow moment" width="60%"/>
+</p>
 
 ---
 
-## What you'll build
+## Wow moments
 
-By the end of the course, you'll have written three real, working pieces of software:
+Every session has one. The whole course is engineered around them — a named, deliberate "oh I just did that" beat in every lesson. Some highlights:
 
-| Month | Project | What it does |
+| Session | Wow moment |
+|:---:|---|
+| **1** | Your first window opens. Click draws coloured pixels. |
+| **3** | **Sand piles itself.** Just from the rules you wrote. |
+| **7** | Brush radius — paint at any size with the scroll wheel. |
+| **8** | v0.1 ships with a UI, FPS counter, and a sand-pour whoosh. |
+| **11** | **Fire spreads** across wood and burns out. |
+| **13** | **Water boils to steam.** Steam rises. Then condenses back. |
+| **16** | v0.2 ships. **EXPLOSIONS.** |
+| **18** | **Save and load.** Close the app. Open it. Your world's still there. |
+| **20** | The codex opens. Discovered tiles in colour, undiscovered as ???. |
+| **23** | A codex tile **flips from ??? to discovered** mid-game. Real game energy. |
+| **24** | v1.0 ships with a title screen. You shipped a game. |
+
+---
+
+## What you'll actually do this week
+
+Each session is sized for **about an hour** of focused work, twice a week, for twelve weeks. That's it. No homework.
+
+- **First runnable thing on screen:** within the first 20 minutes of every single session. (If it isn't, the troubleshooting note tells you what to check.)
+- **A `starter/` and a `solution/`** ships with every session. If your code breaks, you can roll back in one command — copy `starter/` over your work-in-progress and you're back on a known-good footing.
+- **A printable session log** to fill in by hand at the end (5–10 minutes), so the DofE evidence pack writes itself.
+- **An optional challenge** at the end. No solution provided. That one's for you.
+
+→ Start at [**SETUP.md**](./SETUP.md) (~30 min, one-off), then [**month-1/session-00/**](./month-1/session-00/) (~45 min, also one-off), then [**month-1/session-01/**](./month-1/session-01/) and you're off.
+
+---
+
+## What's under the hood
+
+Just two libraries to start with. Two more in Month 3. That's all.
+
+- **`macroquad`** — the window, the drawing, the mouse, the keyboard, the audio. The whole game framework, in one crate. Added in Session 1.
+- **`fastrand`** — fast random numbers for fire and reaction probabilities. Added in Session 3.
+- **`serde` + `serde_json`** — save the world to a human-readable JSON file. Added in Session 18.
+
+Everything is one `cargo run --release` away. Windows, macOS, Linux — same code, same window.
+
+---
+
+## Take screenshots as you go
+
+Visible progress is a real thing. There's a [**screenshot checklist**](./screenshots/README.md) with about **16 specific moments** worth capturing as you build — your first window, the first sand pile, the first fire, the codex unlocking, the v1.0 title screen.
+
+Drop the PNGs in [`screenshots/`](./screenshots/) and commit them. By Session 24 you'll have a visual diary of the whole build. **The assessor flips through your binder seeing the project come to life. You scroll the folder and see how far you've come.**
+
+---
+
+## Show your work — pick a path (or both)
+
+DofE asks you to keep a record. Two ways to do it. You can mix freely.
+
+| Path | What it is | Best for |
 |---|---|---|
-| 1 | `music-theory-cli` | A command-line tool that prints scales and chord progressions for any root note. |
-| 2 | `world-generator` | A seeded procedural terrain generator that prints Minecraft-style ASCII worlds. |
-| 3 | `midi-synth` | A MIDI synthesiser that turns `.mid` files (or live keyboard input) into audio. |
+| **A — Paper** | Print the booklet from [`dfe/session-log-printable.md`](./dfe/session-log-printable.md). Fill in one page per session with a biro. | If you like writing by hand, or if your assessor prefers a binder. |
+| **B — Git** | Edit [`dfe/session-log.md`](./dfe/session-log.md) and `git commit`. Same content, different surface. | If you want every entry to be timestamped automatically and visible on GitHub. |
 
-Every project compiles and runs unmodified on Windows, macOS, and Linux.
+Most participants do both. The choice doesn't change the course one bit.
 
----
-
-## How the course works
-
-- **24 sessions**, ~1 hour each
-- **2 sessions per week** for 12 weeks
-- Each session has a written walkthrough and a folder of runnable example code
-- Every month ends with a 2-session mini-project build
-- Every session ends with an optional **challenge** (no solution provided — that one's for you)
-- Every session ends with a **DofE log reminder** so the evidence pack stays up to date
+The full DfE evidence pack — paths, log templates, milestone reflections, the assessor briefing — lives under [**dfe/**](./dfe/README.md).
 
 ---
 
-## Repository layout
+## Repo layout (the short version)
 
 ```
-.
-├── README.md            (you are here)
-├── SETUP.md             Install Rust, Cargo, VS Code on Windows / macOS / Linux
-├── LICENSE              MIT
-├── .gitignore
-├── dfe/                 Duke of Edinburgh Award evidence pack
-├── month-1/             Foundations  →  music-theory-cli
-├── month-2/             Intermediate →  world-generator
-├── month-3/             Advanced     →  midi-synth
-└── resources/           Cheatsheet and compiler-error reference
+README.md              you are here
+SETUP.md               install Rust + macroquad deps · Win / macOS / Linux
+CHEMISTRY-PRIMER.md    combustion, phase change, oxidation · 10-min read
+GLOSSARY.md            every bit of jargon, in plain English
+
+diagrams/              the SVGs you're seeing in this README
+screenshots/           drop your build screenshots here as you go
+
+dfe/                   Duke of Edinburgh Award evidence pack
+month-1/               Sessions 1–8 + sand-sim v0.1
+month-2/               Sessions 9–16 + sand-sim v0.2
+month-3/               Sessions 17–24 + sand-sim v1.0
+resources/             cheatsheet · compiler-error reference
 ```
 
-Each `session-XX/` folder contains a `README.md` (the lesson) and an `examples/` folder of `cargo run`-able sample code.
+Each session folder has the lesson `README.md`, a `starter/` Cargo project (where the code is at the start), and a `solution/` (where it ends). The milestone releases live in `month-X/milestone/sand-sim-vX.Y/`.
 
 ---
 
-## Prerequisites
+## House rules
 
-- Rust (stable, **1.75 or newer**) installed via [rustup](https://rustup.rs)
-- Cargo (comes with Rust)
-- VS Code with the [`rust-analyzer`](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) extension
-- Python 3 (for the Session 1 speed demo only)
-- **Linux only:** `libasound2-dev` for Month 3 audio (`sudo apt install libasound2-dev`)
-- **Month 3 stretch goal only:** a USB MIDI keyboard (any class-compliant model)
-
-Step-by-step instructions for all three platforms are in [`SETUP.md`](./SETUP.md).
+1. **You see something on screen in the first 20 minutes of every session.** If you don't, the troubleshooting note tells you what to check.
+2. **No pseudocode.** Every code snippet in this course compiles. Every example folder is a real Cargo project you can `cargo run`.
+3. **You can roll back in one command.** If your code breaks, copy the next session's `starter/` over your work and pick up where the lesson is.
+4. **Every session has a named Wow Moment.** That's the moment something visible changes and you go "oh I just did that". If a session went past without one, the lesson is broken — open an issue and flag it.
+5. **No talking down.** Real terminology, explained clearly. The compiler doesn't dumb things down for you, and neither will we.
 
 ---
 
-## How to use this repo
+## Stuck? You're not stuck.
 
-1. **Pre-flight:** work through [`month-1/session-00/`](./month-1/session-00/) — install Rust, create a GitHub account, fork this repo, and make your first commit. ~45 minutes, one-off.
-2. If you're doing this for DofE, read [`dfe/README.md`](./dfe/README.md), [`dfe/print-checklist.md`](./dfe/print-checklist.md), and [`dfe/github-workflow.md`](./dfe/github-workflow.md) **before** Session 1, and decide whether to log on paper, in git, or both.
-3. Open [`month-1/README.md`](./month-1/README.md) and start at Session 1.
-4. After every session, fill in that session's page in your printed booklet **or** edit `dfe/session-log.md` and `git commit` (or both — see [`dfe/github-workflow.md`](./dfe/github-workflow.md)).
-5. After each mini-project, complete the corresponding milestone reflection in `dfe/`.
-6. After Session 24, write your participant statement and have your assessor sign off.
+Every session ships a working `solution/`. If your build is broken and you don't know why:
 
-Get stuck? Each session has a `solution/` or `examples/` folder showing the working answer. Don't recognise a term? The [**GLOSSARY**](./GLOSSARY.md) explains every piece of jargon used in the course (compiled, immutable, borrow, trait, GIL, monte carlo, MIDI, …) in plain English with links for further reading. **Not a musician?** The [**MUSIC THEORY PRIMER**](./MUSIC-THEORY-PRIMER.md) explains notes, scales, MIDI numbers and frequencies from scratch with a labelled piano-keyboard diagram — all the music background you need for Months 1 and 3 in a 10-minute read.
+```bash
+# copy the working answer over your code
+cp -r month-1/session-03/solution/src/* month-1/session-03/starter/src/
+```
 
----
+You're back on a known-good footing. **This is a feature, not cheating.** Real developers reset to a known-good state all the time — that's literally what `git reset --hard` is for.
 
-## How long does each session take?
+The [**GLOSSARY**](./GLOSSARY.md) explains every piece of jargon (`compiled`, `immutable`, `borrow`, `trait`, `cellular automaton`, `emergent behaviour`, `phase transition`, …) in plain English.
 
-The written content for each session is sized for ~1 hour of focused work. Project sessions (7, 8, 15, 16, 21–24) tend to run a little longer because you're building real software.
+The [**CHEMISTRY PRIMER**](./CHEMISTRY-PRIMER.md) covers combustion, phase change, and oxidation in ten minutes. Optional but it makes the reaction names land harder if you skim it before Month 2.
 
----
-
-## Course philosophy
-
-- **Get to the code fast.** Theory exists to make code make sense, not the other way round.
-- **Projects are the point.** Concepts are introduced because you need them for the project.
-- **Respect the learner.** No talking down. Real terminology, explained clearly.
-- **Make it fun.** Music, Minecraft, and maths thread through almost every example.
-- **All sample code works.** No pseudocode. Every snippet is a complete, runnable Cargo project.
+The [**compiler-error reference**](./resources/compiler-errors.md) translates the most common Rust errors into plain English with fixes. Linked from every session's "Stuck?" footer.
 
 ---
 
 ## Licence
 
-MIT. See [`LICENSE`](./LICENSE). Fork it, remix it, teach it. If you build something cool, open a PR.
+MIT. Fork it, remix it, run a workshop with it, teach it to your little brother. If you build something cool on top, [open a PR](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) — we'd love to see.
+
+See [`LICENSE`](./LICENSE) for the full text.
 
 ---
 
 ## Acknowledgements
 
-Built around the Rust language and its incredible community. Special thanks to the maintainers of `cargo`, `rust-analyzer`, `hound`, `midly`, `midir`, `cpal`, `clap`, `colored`, and `fastrand` — all crates used in this course.
+Built around the Rust language and its community. Thank you to the maintainers of `cargo`, `rust-analyzer`, `macroquad`, `fastrand`, `serde`, and `serde_json` — every crate used in this course. And to Noita, Powder Toy, Falling Sand Game, and Sandspiel, for proving that pixels falling down a screen never stops being interesting.
+
+---
+
+→ Next: [**SETUP.md**](./SETUP.md)

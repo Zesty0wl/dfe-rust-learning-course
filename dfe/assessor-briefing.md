@@ -28,10 +28,10 @@ The participant has been working through a 24-session course called the **DfE Ru
 
 - Two ~1-hour sessions per week, for 12 weeks
 - Each session has a written walkthrough and runnable code
-- Every month ends with a project:
-  - **Month 1:** a command-line music-theory tool that prints scales and chord progressions
-  - **Month 2:** a procedural ASCII world generator (Minecraft-inspired)
-  - **Month 3:** a MIDI synthesiser that turns MIDI files (or live keyboard input) into audio
+- The course builds **one** project across the 12 weeks — a real-time sandbox simulation that runs in a window — and ships it three times, each release more ambitious than the last:
+  - **Month 1 (`sand-sim` v0.1):** a real-time falling-sand sandbox with three elements (sand, water, stone) and a brush UI. Click to draw, watch physics happen at 60 frames per second.
+  - **Month 2 (`sand-sim` v0.2):** the same sandbox upgraded to a chemistry set — fire spreads, oil ignites, water boils to steam, lava cools to stone, acid eats things.
+  - **Month 3 (`sand-sim` v1.0):** the chemistry set wrapped in a game — title screen, save and load, a discovery system where players unlock elements by experimentation, and a Pokédex-style codex.
 
 Rust is a modern, industrial programming language used at companies including Microsoft, Amazon, Discord, Cloudflare, and inside the Linux kernel itself. Choosing it as a Skill demonstrates initiative — Python or JavaScript would be easier choices.
 
@@ -44,8 +44,8 @@ Rust is a modern, industrial programming language used at companies including Mi
 | Section in the binder | What it is |
 |---|---|
 | **Session Log** | A running log — one short form per session, 24 in total. Dates and short hand-written or typed notes. |
-| **Milestone Reflections (× 3)** | One longer reflection (3–5 paragraphs) after each of the three projects. |
-| **Project READMEs (× 3)** | A printed description of each project the participant built, so you can see what was made without running code. |
+| **Milestone Reflections (× 3)** | One longer reflection (3–5 paragraphs) after each of the three `sand-sim` releases. |
+| **Milestone READMEs (× 3)** | A printed description of each release — v0.1, v0.2, v1.0 — so you can see what was made without running code. |
 | **Participant Statement** | The participant's final personal statement (1–2 pages). |
 | **Progress Summary** | A pre-built one-page table mapping each session to the concept and evidence. Useful as a map. |
 | **This briefing + sign-off form** | The last page is the form for you to sign at the end. |
@@ -70,10 +70,10 @@ You're checking three things. **All three answers can come from the printed bind
 ### 2. Has the participant demonstrably improved?
 
 - Compare the **first session log page** (Session 1) with one of the **later ones** (e.g. Session 20+). The vocabulary, complexity of what's described, and confidence should be visibly different.
-- Compare the **three milestone reflections**. Each project is more ambitious than the last:
-  - Milestone 1: a few hundred lines, single file, no external libraries
-  - Milestone 2: hundreds of lines across multiple types, with structured data
-  - Milestone 3: a multi-module program using real external libraries, including audio output and possibly hardware MIDI input
+- Compare the **three milestone reflections**. Each release is more ambitious than the last:
+  - v0.1: a few hundred lines, single file, two external libraries
+  - v0.2: hundreds of lines with structured data, lookup tables, and tuned probabilistic behaviour
+  - v1.0: a multi-module program using file I/O, serialisation, generics, and a state machine — a real game
 - Each milestone reflection contains a section explicitly comparing where the participant is **now** to where they were **previously**.
 
 ### 3. Has the participant reflected meaningfully?
@@ -91,9 +91,9 @@ Three signals together are very strong evidence:
 
 - **Handwritten dated entries** in the session log. Faking 24 dated entries by hand, with believable variation in handwriting, mood, and content, is far more effort than just doing the work.
 - **Specific, concrete struggles in the session logs.** A faked log says "I learned about loops". A genuine log says "I forgot that `for` doesn't need parentheses, like Python — wasted ten minutes on a syntax error."
-- **The work itself.** The three projects increase in difficulty. The final project is non-trivial — generating audio from raw bytes is real engineering.
+- **The work itself.** The three releases increase in difficulty. The final release is non-trivial — a real-time simulation with save/load, generics, modules, and a discovery system is real engineering.
 
-If you want, ask the participant to **demo one project to you live** (5 minutes — they open a terminal, type `cargo run`, you watch the output). That's the most direct verification and works well as a closing conversation.
+If you want, ask the participant to **demo the sim to you live** (5 minutes — they open a terminal, type `cargo run --release` inside `month-3/milestone/sand-sim-v1.0/`, a window opens, you watch them play with fire and acid). That's the most direct verification and works well as a closing conversation.
 
 ---
 

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-labelledby="rustTitle rustDesc">
+  <title id="rustTitle">Metal rusting over time</title>
+  <desc id="rustDesc">Five stages showing a metal cell next to water progressing from fresh silver, through patchy orange, to fully rusted, and finally crumbling away to sand.</desc>
+
+  <defs>
+    <linearGradient id="rustBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="200" fill="url(#rustBg)"/>
+
+  <text x="360" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#c0a080" text-anchor="middle" font-weight="bold">METAL + WATER + TIME → RUST</text>
+
+  <!-- 5 stages along the row -->
+  <!-- Stage 1: fresh metal -->
+  <g transform="translate(60,60)">
+    <rect width="80" height="80" fill="#b8c0c8" stroke="#8b95a5" stroke-width="1"/>
+    <rect x="80" width="20" height="80" fill="#4a90e2"/>
+    <text x="50" y="110" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#b8c0c8" text-anchor="middle">day 0</text>
+    <text x="50" y="125" font-family="ui-sans-serif, system-ui" font-size="9" fill="#8b95a5" text-anchor="middle">fresh metal</text>
+  </g>
+
+  <!-- arrow -->
+  <text x="180" y="105" font-family="ui-sans-serif, system-ui" font-size="20" fill="#5a6573" text-anchor="middle">→</text>
+
+  <!-- Stage 2: tiny spots -->
+  <g transform="translate(200,60)">
+    <rect width="80" height="80" fill="#b8c0c8" stroke="#8b95a5" stroke-width="1"/>
+    <circle cx="65" cy="20" r="3" fill="#c46428"/>
+    <circle cx="70" cy="55" r="2" fill="#c46428"/>
+    <circle cx="75" cy="40" r="2" fill="#c46428"/>
+    <rect x="80" width="20" height="80" fill="#4a90e2"/>
+    <text x="50" y="110" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#c46428" text-anchor="middle">week 1</text>
+    <text x="50" y="125" font-family="ui-sans-serif, system-ui" font-size="9" fill="#8b95a5" text-anchor="middle">first rust specks</text>
+  </g>
+
+  <text x="320" y="105" font-family="ui-sans-serif, system-ui" font-size="20" fill="#5a6573" text-anchor="middle">→</text>
+
+  <!-- Stage 3: patchy -->
+  <g transform="translate(340,60)">
+    <rect width="80" height="80" fill="#b8c0c8" stroke="#8b95a5" stroke-width="1"/>
+    <rect x="60" y="0" width="20" height="80" fill="#a85020" opacity="0.85"/>
+    <rect x="40" y="10" width="20" height="20" fill="#a85020" opacity="0.7"/>
+    <rect x="50" y="50" width="14" height="20" fill="#a85020" opacity="0.7"/>
+    <rect x="30" y="40" width="14" height="14" fill="#a85020" opacity="0.5"/>
+    <rect x="80" width="20" height="80" fill="#4a90e2"/>
+    <text x="50" y="110" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#a85020" text-anchor="middle">month 1</text>
+    <text x="50" y="125" font-family="ui-sans-serif, system-ui" font-size="9" fill="#8b95a5" text-anchor="middle">patchy oxide</text>
+  </g>
+
+  <text x="460" y="105" font-family="ui-sans-serif, system-ui" font-size="20" fill="#5a6573" text-anchor="middle">→</text>
+
+  <!-- Stage 4: fully rusted -->
+  <g transform="translate(480,60)">
+    <rect width="80" height="80" fill="#a85020"/>
+    <rect x="0"  y="0"  width="20" height="20" fill="#c46428" opacity="0.7"/>
+    <rect x="40" y="40" width="20" height="20" fill="#7a3818" opacity="0.7"/>
+    <rect x="60" y="0"  width="20" height="20" fill="#7a3818" opacity="0.7"/>
+    <rect x="0"  y="60" width="20" height="20" fill="#7a3818" opacity="0.7"/>
+    <rect x="80" width="20" height="80" fill="#4a90e2"/>
+    <text x="50" y="110" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#7a3818" text-anchor="middle">year 1</text>
+    <text x="50" y="125" font-family="ui-sans-serif, system-ui" font-size="9" fill="#8b95a5" text-anchor="middle">fully rusted</text>
+  </g>
+
+  <text x="600" y="105" font-family="ui-sans-serif, system-ui" font-size="20" fill="#5a6573" text-anchor="middle">→</text>
+
+  <!-- Stage 5: crumbled to sand -->
+  <g transform="translate(620,60)">
+    <!-- a pile of orange/sand crumbs -->
+    <rect x="30" y="60" width="10" height="10" fill="#c46428"/>
+    <rect x="40" y="60" width="10" height="10" fill="#e6c170"/>
+    <rect x="50" y="60" width="10" height="10" fill="#c46428"/>
+    <rect x="60" y="60" width="10" height="10" fill="#e6c170"/>
+    <rect x="20" y="60" width="10" height="10" fill="#e6c170"/>
+    <rect x="70" y="60" width="10" height="10" fill="#c46428"/>
+    <rect x="35" y="50" width="10" height="10" fill="#e6c170"/>
+    <rect x="45" y="50" width="10" height="10" fill="#c46428"/>
+    <rect x="55" y="50" width="10" height="10" fill="#e6c170"/>
+    <rect x="45" y="40" width="10" height="10" fill="#e6c170"/>
+    <!-- water still there -->
+    <rect x="80" width="20" height="80" fill="#4a90e2"/>
+    <text x="50" y="110" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#e6c170" text-anchor="middle">year 5+</text>
+    <text x="50" y="125" font-family="ui-sans-serif, system-ui" font-size="9" fill="#8b95a5" text-anchor="middle">crumbles to sand</text>
+  </g>
+
+  <text x="360" y="175" font-family="ui-sans-serif, system-ui" font-size="11" fill="#5a6573" text-anchor="middle" font-style="italic">running Rust to simulate rust. the joke is intentional.</text>
+</svg>

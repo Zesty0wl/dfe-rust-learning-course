@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="somTitle somDesc">
+  <title id="somTitle">States of matter in sand-sim</title>
+  <desc id="somDesc">Three panels showing how solids stay put, liquids flow sideways, and gases rise upwards in the simulation.</desc>
+
+  <defs>
+    <linearGradient id="somBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="220" fill="url(#somBg)"/>
+
+  <!-- ============ SOLID PANEL ============ -->
+  <g transform="translate(20,20)">
+    <rect width="210" height="170" rx="8" fill="#11161e" stroke="#2d3748" stroke-width="1.5"/>
+    <text x="105" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#e6c170" text-anchor="middle" font-weight="bold">SOLID</text>
+    <text x="105" y="38" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#8b95a5" text-anchor="middle">sand · stone · wood · glass</text>
+
+    <!-- pile of sand, static -->
+    <g transform="translate(20,60)">
+      <!-- triangular sand pile -->
+      <rect x="70" y="80"  width="10" height="10" fill="#e6c170"/>
+      <rect x="60" y="80"  width="10" height="10" fill="#e6c170"/>
+      <rect x="80" y="80"  width="10" height="10" fill="#e6c170"/>
+      <rect x="90" y="80"  width="10" height="10" fill="#e6c170"/>
+      <rect x="50" y="80"  width="10" height="10" fill="#e6c170"/>
+      <rect x="100" y="80" width="10" height="10" fill="#e6c170"/>
+      <rect x="60" y="70"  width="10" height="10" fill="#e6c170"/>
+      <rect x="70" y="70"  width="10" height="10" fill="#e6c170"/>
+      <rect x="80" y="70"  width="10" height="10" fill="#e6c170"/>
+      <rect x="90" y="70"  width="10" height="10" fill="#e6c170"/>
+      <rect x="70" y="60"  width="10" height="10" fill="#e6c170"/>
+      <rect x="80" y="60"  width="10" height="10" fill="#e6c170"/>
+      <!-- stone base -->
+      <rect x="20" y="90" width="140" height="10" fill="#6b7280"/>
+    </g>
+
+    <text x="105" y="158" font-family="ui-sans-serif, system-ui" font-size="10" fill="#8b95a5" text-anchor="middle" font-style="italic">stays put</text>
+  </g>
+
+  <!-- ============ LIQUID PANEL ============ -->
+  <g transform="translate(255,20)">
+    <rect width="210" height="170" rx="8" fill="#11161e" stroke="#2d3748" stroke-width="1.5"/>
+    <text x="105" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#4a90e2" text-anchor="middle" font-weight="bold">LIQUID</text>
+    <text x="105" y="38" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#8b95a5" text-anchor="middle">water · oil · acid · lava</text>
+
+    <!-- stone container -->
+    <g transform="translate(20,60)">
+      <!-- bowl walls -->
+      <rect x="20" y="40" width="10" height="60" fill="#6b7280"/>
+      <rect x="140" y="40" width="10" height="60" fill="#6b7280"/>
+      <rect x="20" y="90" width="130" height="10" fill="#6b7280"/>
+      <!-- water surface, with subtle sway -->
+      <rect x="30" y="60" width="110" height="30" fill="#4a90e2">
+        <animate attributeName="y" values="60;58;60;62;60" dur="2.4s" repeatCount="indefinite"/>
+        <animate attributeName="height" values="30;32;30;28;30" dur="2.4s" repeatCount="indefinite"/>
+      </rect>
+      <!-- single droplet falling repeatedly -->
+      <rect width="6" height="6" fill="#4a90e2">
+        <animate attributeName="x" values="80;80" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="0;55" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <text x="105" y="158" font-family="ui-sans-serif, system-ui" font-size="10" fill="#8b95a5" text-anchor="middle" font-style="italic">flows sideways &amp; down</text>
+  </g>
+
+  <!-- ============ GAS PANEL ============ -->
+  <g transform="translate(490,20)">
+    <rect width="210" height="170" rx="8" fill="#11161e" stroke="#2d3748" stroke-width="1.5"/>
+    <text x="105" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#c8d4e0" text-anchor="middle" font-weight="bold">GAS</text>
+    <text x="105" y="38" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#8b95a5" text-anchor="middle">steam · smoke · fire</text>
+
+    <!-- steam particles rising -->
+    <g transform="translate(20,60)">
+      <!-- source line at bottom -->
+      <rect x="20" y="92" width="130" height="6" fill="#4a90e2" opacity="0.5"/>
+
+      <rect width="8" height="8" fill="#c8d4e0" opacity="0.8">
+        <animate attributeName="x" values="40;38;40;42;40" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="86;6" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;0.9;0.9;0" dur="2s" repeatCount="indefinite"/>
+      </rect>
+      <rect width="8" height="8" fill="#c8d4e0" opacity="0.8">
+        <animate attributeName="x" values="70;72;70;68;70" dur="2.4s" repeatCount="indefinite" begin="0.4s"/>
+        <animate attributeName="y" values="86;6" dur="2.4s" repeatCount="indefinite" begin="0.4s"/>
+        <animate attributeName="opacity" values="0;0.9;0.9;0" dur="2.4s" repeatCount="indefinite" begin="0.4s"/>
+      </rect>
+      <rect width="8" height="8" fill="#c8d4e0" opacity="0.8">
+        <animate attributeName="x" values="100;102;100;98;100" dur="2.2s" repeatCount="indefinite" begin="0.9s"/>
+        <animate attributeName="y" values="86;6" dur="2.2s" repeatCount="indefinite" begin="0.9s"/>
+        <animate attributeName="opacity" values="0;0.9;0.9;0" dur="2.2s" repeatCount="indefinite" begin="0.9s"/>
+      </rect>
+      <rect width="8" height="8" fill="#c8d4e0" opacity="0.8">
+        <animate attributeName="x" values="130;128;130;132;130" dur="2.6s" repeatCount="indefinite" begin="0.2s"/>
+        <animate attributeName="y" values="86;6" dur="2.6s" repeatCount="indefinite" begin="0.2s"/>
+        <animate attributeName="opacity" values="0;0.9;0.9;0" dur="2.6s" repeatCount="indefinite" begin="0.2s"/>
+      </rect>
+    </g>
+
+    <text x="105" y="158" font-family="ui-sans-serif, system-ui" font-size="10" fill="#8b95a5" text-anchor="middle" font-style="italic">rises (anti-gravity)</text>
+  </g>
+
+  <text x="360" y="210" font-family="ui-sans-serif, system-ui" font-size="11" fill="#5a6573" text-anchor="middle">every cell in sand-sim is one of these three shapes of behaviour</text>
+</svg>

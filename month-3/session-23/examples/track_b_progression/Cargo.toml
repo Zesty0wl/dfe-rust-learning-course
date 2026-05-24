@@ -1,7 +1,0 @@
-[package]
-name = "track_b_progression"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-hound = "3.5"

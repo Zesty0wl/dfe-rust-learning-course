@@ -4,31 +4,31 @@ A static map of the entire course. Use this to give the assessor (or yourself) a
 
 | Session | Title | Concept(s) introduced | Evidence in this repo |
 |---|---|---|---|
-| 1 | Why Rust? History, Setup, and the Speed Demo | `cargo new`, `cargo run`, `fn main`, `println!` | `month-1/session-01/examples/pi_python.py`, `pi_rust/`, `hello_world/` + Pi benchmark output in session log |
-| 2 | Variables, Types, and Mutability | `let`, `let mut`, scalar types, type inference, shadowing, integer overflow | `month-1/session-02/examples/` (chromatic frequency calculator) |
-| 3 | Functions, Expressions, and Basic I/O | `fn`, parameters, return types, expression-vs-statement, `std::io`, `.parse()` | `month-1/session-03/examples/midi_to_freq/` |
-| 4 | Control Flow | `if`/`else`, `loop`, `while`, `for`, `break`, `continue`, value-returning loops | `month-1/session-04/examples/piano_keyboard/` |
-| 5 | Pattern Matching and `match` | `match` expressions, exhaustive matching, guards, `_` wildcard | `month-1/session-05/examples/midi_note_names/` |
-| 6 | Enums and Strings | `enum`, `String` vs `&str`, `format!`, brief `Vec` preview | `month-1/session-06/examples/scales_intro/` |
-| 7 | Mini-Project Build Part 1 — Scale Generator | Project work — applying Sessions 1–6 | `month-1/project/music-theory-cli/` (in-progress build) |
-| 8 | Mini-Project Build Part 2 — Chord Progressions and Polish | `Cargo.toml` deps preview, `eprintln!`, `process::exit`, `colored` | `month-1/project/music-theory-cli/solution/` (complete) + Milestone 1 reflection |
-| 9 | Structs and Methods | `struct`, `impl`, `&self`, `&mut self`, associated functions, `#[derive(Debug)]` | `month-2/session-09/examples/block_struct/` |
-| 10 | Enums with Data and `Option<T>` | Variants with data, `Option`, `Some`/`None`, pattern-matching `Option` | `month-2/session-10/examples/tile_enum/` |
-| 11 | Collections — `Vec` and `HashMap` | `Vec` in depth, `HashMap`, when to use which | `month-2/session-11/examples/world_grid/` |
-| 12 | Iterators and Closures (Introduction) | `.iter()`, `.map()`, `.filter()`, `.collect()`, basic closures | `month-2/session-12/examples/grid_processing/` |
-| 13 | Error Handling | `Result<T, E>`, `?`, custom error enums, `Result` from `main` | `month-2/session-13/examples/parse_seed/` |
-| 14 | Traits | Defining/implementing traits, `Display`, `Debug`, `Clone`, `Copy`, trait bounds | `month-2/session-14/examples/describable/` |
-| 15 | Mini-Project Build Part 1 — World Core | Project work — applying Sessions 9–14 | `month-2/project/world-generator/` (in-progress build) |
-| 16 | Mini-Project Build Part 2 — Render and Polish | Render, biomes, statistics, optional `colored` | `month-2/project/world-generator/solution/` (complete) + Milestone 2 reflection |
-| 17 | The Ecosystem — Modules, Crates, and Cargo | `mod`, `pub`, `use`, multi-file projects, `Cargo.toml` deps, `cargo add` | `month-3/session-17/examples/music_theory_modular/` |
-| 18 | File I/O and Binary Data | `std::fs`, `BufReader`/`BufWriter`, raw byte writing, WAV header | `month-3/session-18/examples/wav_writer/` (hand-rolled WAV) |
-| 19 | Closures and Iterators (Deep Dive) | `Fn`/`FnMut`/`FnOnce`, `move`, `.zip`/`.chain`/`.take`, custom iterators | `month-3/session-19/examples/oscillator_iter/` |
-| 20 | Generics and Advanced Traits | Generic fns/structs, trait bounds, `impl Trait`, `Box<dyn Trait>`, lifetimes intro | `month-3/session-20/examples/generic_oscillator/` |
-| 21 | Final Project Session 1 — WAV Synthesis Engine | Waveforms, ADSR envelope, writing WAV with `hound` | `month-3/project/midi-synth/` (engine complete) |
-| 22 | Final Project Session 2 — MIDI File Parsing | `midly`, MIDI ticks, tempo, mixing buffers | `month-3/project/midi-synth/` (file → WAV) |
-| 23 | Final Project Session 3 — Live MIDI Input | `midir`, `cpal`, `mpsc` channels, real-time threading | `month-3/project/midi-synth/` (live keyboard mode) |
-| 24 | Final Project Session 4 — Polish, Showcase, What Next | `clap` CLI, polyphony, retrospective | `month-3/project/midi-synth/solution/` (complete) + Milestone 3 reflection + participant statement |
+| 1 | A Window, a Grid, and Your First Pixel | `cargo new`, `cargo add`, `async fn main`, `loop`, `Vec<Vec<u8>>`, macroquad basics, mouse input | `month-1/session-01/solution/` (windowed dot painter) |
+| 2 | Variables, Types, and Giving Sand a Colour | `let`/`let mut`, scalar types, type inference, `const`, named colours, `if`/`else` | `month-1/session-02/solution/` (typed grid + element colours) |
+| 3 | Sand Falls | Nested `for` loops, swap-in-Vec, bottom-to-top iteration, `fastrand` | `month-1/session-03/solution/` (gravity + piling) |
+| 4 | Control Flow and a Better Update Loop | `if`/`else if`/`else`, `continue`/`break`, bounds checking, refactoring into a function | `month-1/session-04/solution/` (clean update loop) |
+| 5 | Pattern Matching and Multiple Elements | `match` expressions, exhaustive matching, `_` wildcard | `month-1/session-05/solution/` (sand + water + stone physics) |
+| 6 | Enums — Giving Elements Proper Names | `enum`, `#[derive(Debug, Clone, Copy, PartialEq)]`, matching on enums | `month-1/session-06/solution/` (CellType enum) |
+| 7 | Project Build Part 1 — Element Selector and Brush | Project work — applying Sessions 1–6 | `month-1/milestone/sand-sim-v0.1/` (UI + brush in progress) |
+| 8 | Project Build Part 2 — Polish and Milestone | FPS counter, pause, clear, erase, audio | `month-1/milestone/sand-sim-v0.1/` (complete) + Milestone 1 reflection |
+| 9 | Structs — Giving Cells a Temperature | `struct`, `impl`, `&self`/`&mut self`, associated functions | `month-2/session-09/solution/` (Cell struct with temperature) |
+| 10 | Enums with Data and `Option` — Modelling Reactions | Enum variants with data, `Option<T>`, `Some`/`None`, pattern-matching `Option` | `month-2/session-10/solution/` (first formal reaction: wood ignites) |
+| 11 | Fire | `fastrand::f32()` probabilities, cell lifetime field | `month-2/session-11/solution/` (fire spreads + burns out) |
+| 12 | Oil and Explosive Reactions | `Vec` in depth, neighbour iteration, tuned probabilities | `month-2/session-12/solution/` (oil ignition cascade) |
+| 13 | Steam — A State Change | Iterators: `.iter()`, `.enumerate()`, `.map()`, `.filter()` | `month-2/session-13/solution/` (water → steam → water) |
+| 14 | Acid and the Reactions Architecture | `HashMap<(CellType, CellType), ReactionOutcome>`, architectural refactor | `month-2/session-14/solution/` (reactions table + acid) |
+| 15 | Project Build Part 1 — Lava, Ice, and Chain Reactions | Project work — adding elements via the reactions table | `month-2/milestone/sand-sim-v0.2/` (lava + ice in progress) |
+| 16 | Project Build Part 2 — Polish and Milestone | Heat-map overlay, element counts, audio effects | `month-2/milestone/sand-sim-v0.2/` (complete) + Milestone 2 reflection |
+| 17 | Modules — Taming the Codebase | `mod`, `pub`, `use`, multi-file projects, `super::` | `month-3/session-17/solution/` (project split across files) |
+| 18 | File I/O — Save and Load | `std::fs`, `serde`, `serde_json`, `Result<T, E>`, the `?` operator | `month-3/session-18/solution/` (save / load to JSON) |
+| 19 | The Recipe System — Unlocking Elements | Closures, `Fn` trait, iterators: `.any()`, `.collect()` | `month-3/session-19/solution/` (discovery system) |
+| 20 | The Codex UI | Generics, `Box<dyn Trait>`, simple UI layout | `month-3/session-20/solution/` (codex with silhouettes) |
+| 21 | New Elements — Gunpowder and Glass | `move` closures, iterator chaining, `flat_map` | `month-3/session-21/solution/` (explosions + glass) |
+| 22 | New Elements — Concrete and Rust | `std::time`, time-based state changes | `month-3/session-22/solution/` (concrete sets, metal rusts) |
+| 23 | Polish and Secrets | `enum GameState`, state-machine pattern | `month-3/session-23/solution/` (title screen + hidden recipes) |
+| 24 | Showcase, Retrospective, and What Next | Final polish, `cargo clippy`, project README | `month-3/milestone/sand-sim-v1.0/` (complete) + Milestone 3 reflection + participant statement |
 
 ---
 
-**Total:** 24 sessions • 3 milestone projects • ~36 working code samples • 1 complete DofE evidence pack.
+**Total:** 24 sessions • 3 milestone releases of one project (`sand-sim` v0.1 → v0.2 → v1.0) • a working `starter/` + `solution/` Cargo project per session • 1 complete DofE evidence pack.

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" role="img" aria-labelledby="progressTitle">
+  <title id="progressTitle">12-week roadmap with three milestone releases</title>
+
+  <defs>
+    <linearGradient id="bgProg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="160" rx="8" fill="url(#bgProg)" stroke="#2d3748"/>
+
+  <text x="360" y="26" text-anchor="middle" font-family="Menlo,monospace" font-size="13" font-weight="bold" fill="#f0c674">12 weeks. 24 sessions. 3 releases.</text>
+
+  <!-- Track line -->
+  <line x1="40" y1="80" x2="680" y2="80" stroke="#2d3748" stroke-width="2"/>
+
+  <!-- Month 1 segment: 1/3 of track -->
+  <line x1="40" y1="80" x2="252" y2="80" stroke="#e6c170" stroke-width="6" stroke-linecap="round"/>
+  <line x1="252" y1="80" x2="466" y2="80" stroke="#ff6b35" stroke-width="6" stroke-linecap="round"/>
+  <line x1="466" y1="80" x2="680" y2="80" stroke="#f0c674" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Milestone markers -->
+  <g>
+    <circle cx="252" cy="80" r="10" fill="#11161e" stroke="#e6c170" stroke-width="3"/>
+    <text x="252" y="85" text-anchor="middle" font-family="Menlo,monospace" font-size="11" font-weight="bold" fill="#e6c170">8</text>
+
+    <circle cx="466" cy="80" r="10" fill="#11161e" stroke="#ff6b35" stroke-width="3"/>
+    <text x="466" y="85" text-anchor="middle" font-family="Menlo,monospace" font-size="11" font-weight="bold" fill="#ff6b35">16</text>
+
+    <circle cx="680" cy="80" r="12" fill="#11161e" stroke="#f0c674" stroke-width="3"/>
+    <text x="680" y="85" text-anchor="middle" font-family="Menlo,monospace" font-size="11" font-weight="bold" fill="#f0c674">24</text>
+  </g>
+
+  <!-- Session 1 origin -->
+  <circle cx="40" cy="80" r="6" fill="#27c93f"/>
+  <text x="40" y="55" text-anchor="middle" font-family="Menlo,monospace" font-size="10" fill="#27c93f">START</text>
+
+  <!-- Release labels -->
+  <g font-family="Menlo,monospace" font-size="11" font-weight="bold">
+    <text x="146" y="118" text-anchor="middle" fill="#e6c170">v0.1 SANDBOX</text>
+    <text x="146" y="136" text-anchor="middle" font-size="9" font-weight="normal" fill="#8b949e">sand · water · stone</text>
+
+    <text x="359" y="118" text-anchor="middle" fill="#ff6b35">v0.2 CHEMISTRY</text>
+    <text x="359" y="136" text-anchor="middle" font-size="9" font-weight="normal" fill="#8b949e">fire · oil · steam · lava · acid</text>
+
+    <text x="573" y="118" text-anchor="middle" fill="#f0c674">v1.0 ALCHEMY GAME</text>
+    <text x="573" y="136" text-anchor="middle" font-size="9" font-weight="normal" fill="#8b949e">save · recipes · codex · secrets</text>
+  </g>
+</svg>

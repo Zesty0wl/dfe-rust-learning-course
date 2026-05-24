@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-labelledby="chainTitle">
+  <title id="chainTitle">A chain reaction in v0.2: oil ignites, fire heats water, water boils to steam</title>
+
+  <defs>
+    <linearGradient id="fireGrad2" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#ffc107"/>
+      <stop offset="100%" stop-color="#ff3300"/>
+    </linearGradient>
+    <linearGradient id="bgChain" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="200" rx="8" fill="url(#bgChain)" stroke="#2d3748"/>
+
+  <text x="360" y="24" text-anchor="middle" font-family="Menlo,monospace" font-size="13" font-weight="bold" fill="#f0c674">A reaction chain you'll trigger by Session 13</text>
+
+  <!-- four cells in a row, each 140x100, gap 20, starting at x=20, y=50 -->
+  <!-- 1: oil + match -->
+  <g transform="translate(20,50)">
+    <rect width="140" height="110" rx="6" fill="#11161e" stroke="#2d3748"/>
+    <!-- oil puddle -->
+    <rect x="20" y="70" width="100" height="20" fill="#1a0e0e"/>
+    <rect x="20" y="68" width="100" height="2" fill="#3d2616"/>
+    <!-- tiny match-like spark above -->
+    <rect x="68" y="40" width="4" height="20" fill="#a0522d"/>
+    <rect x="62" y="32" width="16" height="10" fill="url(#fireGrad2)"/>
+    <text x="70" y="20" text-anchor="middle" font-family="Menlo,monospace" font-size="10" fill="#8b6f47">1. OIL</text>
+  </g>
+
+  <text x="178" y="110" font-family="Inter,Helvetica,sans-serif" font-size="22" fill="#3d4654" font-weight="bold">→</text>
+
+  <!-- 2: oil ignites, low explosion thump -->
+  <g transform="translate(200,50)">
+    <rect width="140" height="110" rx="6" fill="#11161e" stroke="#2d3748"/>
+    <!-- larger flame -->
+    <rect x="40" y="60" width="60" height="34" fill="url(#fireGrad2)">
+      <animate attributeName="height" values="34;42;30;38;34" dur="0.8s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="60;52;64;56;60" dur="0.8s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="30" y="92" width="80" height="4" fill="#1a0e0e"/>
+    <!-- ember -->
+    <rect x="60" y="48" width="3" height="3" fill="#ffe066">
+      <animate attributeName="y" values="60;20" dur="1.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0" dur="1.4s" repeatCount="indefinite"/>
+    </rect>
+    <text x="70" y="20" text-anchor="middle" font-family="Menlo,monospace" font-size="10" fill="#ff6b35">2. + FIRE = BURN</text>
+  </g>
+
+  <text x="358" y="110" font-family="Inter,Helvetica,sans-serif" font-size="22" fill="#3d4654" font-weight="bold">→</text>
+
+  <!-- 3: heat reaches water -->
+  <g transform="translate(380,50)">
+    <rect width="140" height="110" rx="6" fill="#11161e" stroke="#2d3748"/>
+    <!-- water with rising bubbles -->
+    <rect x="20" y="60" width="100" height="40" fill="#4a90e2"/>
+    <rect x="20" y="58" width="100" height="2" fill="#62a5f0"/>
+    <!-- bubbles -->
+    <circle cx="40" cy="80" r="3" fill="#c8d4e0">
+      <animate attributeName="cy" values="98;62" dur="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="70" cy="90" r="3" fill="#c8d4e0">
+      <animate attributeName="cy" values="98;62" dur="1.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="100" cy="80" r="3" fill="#c8d4e0">
+      <animate attributeName="cy" values="98;62" dur="1.6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="70" y="20" text-anchor="middle" font-family="Menlo,monospace" font-size="10" fill="#4a90e2">3. WATER WARMS</text>
+  </g>
+
+  <text x="538" y="110" font-family="Inter,Helvetica,sans-serif" font-size="22" fill="#3d4654" font-weight="bold">→</text>
+
+  <!-- 4: steam rises -->
+  <g transform="translate(560,50)">
+    <rect width="140" height="110" rx="6" fill="#11161e" stroke="#2d3748"/>
+    <rect x="20" y="80" width="100" height="20" fill="#4a90e2"/>
+    <!-- steam pixels -->
+    <g fill="#c8d4e0" opacity="0.85">
+      <rect x="35" y="50" width="6" height="6">
+        <animate attributeName="y" values="78;30" dur="2.4s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0" dur="2.4s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="55" y="40" width="6" height="6">
+        <animate attributeName="y" values="78;20" dur="2.8s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0" dur="2.8s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="80" y="30" width="6" height="6">
+        <animate attributeName="y" values="78;10" dur="3.2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0" dur="3.2s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="100" y="50" width="6" height="6">
+        <animate attributeName="y" values="78;25" dur="2.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0" dur="2.6s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+    <text x="70" y="20" text-anchor="middle" font-family="Menlo,monospace" font-size="10" fill="#c8d4e0">4. STEAM = WIN</text>
+  </g>
+</svg>

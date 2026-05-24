@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-labelledby="convTitle convDesc">
+  <title id="convTitle">Convection cycle: water → steam → water</title>
+  <desc id="convDesc">A stone bowl of water sits above a fire. Water at the bottom heats up, rises as steam, cools at the top, falls back down, and gets boiled again. An infinite loop.</desc>
+
+  <defs>
+    <linearGradient id="convBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="convFire" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#ffc107"/>
+      <stop offset="100%" stop-color="#ff3300"/>
+    </linearGradient>
+    <linearGradient id="convWater" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5fa3e8"/>
+      <stop offset="100%" stop-color="#3a7ac8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="480" height="320" fill="url(#convBg)"/>
+
+  <text x="240" y="24" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#c8d4e0" text-anchor="middle" font-weight="bold">CONVECTION CYCLE</text>
+
+  <!-- Bowl + water + steam region -->
+  <g transform="translate(140,60)">
+    <!-- stone bowl walls -->
+    <rect x="0"   y="40" width="14" height="120" fill="#6b7280"/>
+    <rect x="186" y="40" width="14" height="120" fill="#6b7280"/>
+    <rect x="0"   y="150" width="200" height="14" fill="#6b7280"/>
+
+    <!-- water in bowl -->
+    <rect x="14" y="100" width="172" height="50" fill="url(#convWater)"/>
+
+    <!-- rising steam particles (path: bottom-centre up, drifts and falls down sides) -->
+    <!-- steam #1 - left arc -->
+    <circle r="6" fill="#c8d4e0" opacity="0.85">
+      <animate attributeName="cx" values="80;75;55;35;28;30" dur="3.6s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="100;60;20;-10;30;90" dur="3.6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.9;0.9;0.7;0.4;0" dur="3.6s" repeatCount="indefinite"/>
+    </circle>
+    <!-- steam #2 - right arc -->
+    <circle r="6" fill="#c8d4e0" opacity="0.85">
+      <animate attributeName="cx" values="120;125;145;165;172;170" dur="3.6s" repeatCount="indefinite" begin="0.9s"/>
+      <animate attributeName="cy" values="100;60;20;-10;30;90" dur="3.6s" repeatCount="indefinite" begin="0.9s"/>
+      <animate attributeName="opacity" values="0;0.9;0.9;0.7;0.4;0" dur="3.6s" repeatCount="indefinite" begin="0.9s"/>
+    </circle>
+    <!-- steam #3 - left arc offset -->
+    <circle r="5" fill="#c8d4e0" opacity="0.8">
+      <animate attributeName="cx" values="90;82;58;38;30;34" dur="3.6s" repeatCount="indefinite" begin="1.8s"/>
+      <animate attributeName="cy" values="100;55;15;-5;35;90" dur="3.6s" repeatCount="indefinite" begin="1.8s"/>
+      <animate attributeName="opacity" values="0;0.9;0.9;0.6;0.3;0" dur="3.6s" repeatCount="indefinite" begin="1.8s"/>
+    </circle>
+    <!-- steam #4 - right arc offset -->
+    <circle r="5" fill="#c8d4e0" opacity="0.8">
+      <animate attributeName="cx" values="110;118;142;162;170;168" dur="3.6s" repeatCount="indefinite" begin="2.7s"/>
+      <animate attributeName="cy" values="100;55;15;-5;35;90" dur="3.6s" repeatCount="indefinite" begin="2.7s"/>
+      <animate attributeName="opacity" values="0;0.9;0.9;0.6;0.3;0" dur="3.6s" repeatCount="indefinite" begin="2.7s"/>
+    </circle>
+
+    <!-- arrows showing cycle -->
+    <!-- up arrow centre -->
+    <g opacity="0.4" stroke="#c8d4e0" stroke-width="1.5" fill="none">
+      <path d="M 100 95 L 100 0" stroke-dasharray="3 3"/>
+      <polygon points="100,0 96,8 104,8" fill="#c8d4e0"/>
+    </g>
+    <!-- down arrow left -->
+    <g opacity="0.4" stroke="#5fa3e8" stroke-width="1.5" fill="none">
+      <path d="M 30 0 L 30 95" stroke-dasharray="3 3"/>
+      <polygon points="30,95 26,87 34,87" fill="#5fa3e8"/>
+    </g>
+    <!-- down arrow right -->
+    <g opacity="0.4" stroke="#5fa3e8" stroke-width="1.5" fill="none">
+      <path d="M 170 0 L 170 95" stroke-dasharray="3 3"/>
+      <polygon points="170,95 166,87 174,87" fill="#5fa3e8"/>
+    </g>
+
+    <!-- fire below bowl -->
+    <g transform="translate(60,170)">
+      <path d="M 0 25 Q -5 0 5 -15 Q 15 -25 25 -15 Q 35 -5 30 20 Q 40 -10 50 15 Q 60 -20 70 10 Q 80 -15 80 25 Z" fill="url(#convFire)">
+        <animateTransform attributeName="transform" type="scale" values="1,1;1.05,1.1;0.95,0.95;1,1" dur="0.6s" repeatCount="indefinite"/>
+      </path>
+    </g>
+  </g>
+
+  <!-- side labels -->
+  <text x="120" y="80" font-family="ui-sans-serif, system-ui" font-size="11" fill="#c8d4e0" text-anchor="end">steam cools</text>
+  <text x="120" y="93" font-family="ui-sans-serif, system-ui" font-size="11" fill="#c8d4e0" text-anchor="end">&amp; falls</text>
+
+  <text x="360" y="80" font-family="ui-sans-serif, system-ui" font-size="11" fill="#c8d4e0" text-anchor="start">steam cools</text>
+  <text x="360" y="93" font-family="ui-sans-serif, system-ui" font-size="11" fill="#c8d4e0" text-anchor="start">&amp; falls</text>
+
+  <text x="240" y="86" font-family="ui-sans-serif, system-ui" font-size="11" fill="#c8d4e0" text-anchor="middle" font-style="italic">hot steam rises</text>
+
+  <text x="240" y="200" font-family="ui-sans-serif, system-ui" font-size="11" fill="#5fa3e8" text-anchor="middle">water heated from below</text>
+  <text x="240" y="260" font-family="ui-sans-serif, system-ui" font-size="11" fill="#ff6b35" text-anchor="middle">heat source (fire / lava)</text>
+
+  <text x="240" y="305" font-family="ui-sans-serif, system-ui" font-size="11" fill="#5a6573" text-anchor="middle">emergent behaviour from one rule per cell type</text>
+</svg>

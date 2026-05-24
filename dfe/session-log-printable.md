@@ -32,7 +32,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 ---
 
-## Session 1 — Why Rust? History, Setup, and the Speed Demo
+## Session 1 — A Window, a Grid, and Your First Pixel
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -77,7 +77,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 2 — Variables, Types, and Mutability
+## Session 2 — Variables, Types, and Giving Sand a Colour
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -116,7 +116,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 3 — Functions, Expressions, and Basic I/O
+## Session 3 — Sand Falls
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -155,7 +155,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 4 — Control Flow
+## Session 4 — Control Flow and a Better Update Loop
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -194,7 +194,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 5 — Pattern Matching and `match`
+## Session 5 — Pattern Matching and Multiple Elements
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -233,7 +233,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 6 — Enums and Strings
+## Session 6 — Enums: Giving Elements Proper Names
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -272,7 +272,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 7 — Mini-Project Build Part 1 (Scale Generator)
+## Session 7 — Project Build Part 1: Element Selector and Brush
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -311,7 +311,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 8 — Mini-Project Build Part 2 (Chord Progressions)
+## Session 8 — Project Build Part 2: Polish and Milestone (sand-sim v0.1 ships)
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -352,7 +352,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 9 — Structs and Methods
+## Session 9 — Structs: Giving Cells a Temperature
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -391,7 +391,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 10 — Enums with Data and `Option<T>`
+## Session 10 — Enums with Data and Option: Modelling Reactions
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -430,7 +430,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 11 — Collections (`Vec` and `HashMap`)
+## Session 11 — Fire
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -469,7 +469,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 12 — Iterators and Closures (Introduction)
+## Session 12 — Oil and Explosive Reactions
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -508,7 +508,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 13 — Error Handling
+## Session 13 — Steam: A State Change
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -547,7 +547,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 14 — Traits
+## Session 14 — Acid and the Reactions Architecture
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -586,7 +586,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 15 — Mini-Project Build Part 1 (World Core)
+## Session 15 — Project Build Part 1: Lava, Ice, and Chain Reactions
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -625,7 +625,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 16 — Mini-Project Build Part 2 (Render and Polish)
+## Session 16 — Project Build Part 2: Polish and Milestone (sand-sim v0.2 ships)
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -666,7 +666,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 17 — The Ecosystem (Modules, Crates, Cargo)
+## Session 17 — Modules: Taming the Codebase
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -705,7 +705,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 18 — File I/O and Binary Data
+## Session 18 — File I/O: Save and Load
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -744,7 +744,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 19 — Closures and Iterators (Deep Dive)
+## Session 19 — The Recipe System: Unlocking Elements
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -783,7 +783,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 20 — Generics and Advanced Traits
+## Session 20 — The Codex UI
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -822,7 +822,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 21 — Final Project Part 1 (WAV Synthesis Engine)
+## Session 21 — New Elements: Gunpowder and Glass
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -861,7 +861,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 22 — Final Project Part 2 (MIDI File Parsing)
+## Session 22 — New Elements: Concrete and Rust
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -900,7 +900,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 23 — Final Project Part 3 (Live MIDI Input)
+## Session 23 — Polish and Secrets
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 
@@ -939,7 +939,7 @@ This booklet is a paper record of a 24-session, 12-week Rust programming course 
 
 <div style="page-break-after: always;"></div>
 
-## Session 24 — Final Project Part 4 (Polish, Showcase, What Next)
+## Session 24 — Showcase, Retrospective, and What Next (sand-sim v1.0 ships)
 
 **Date:** ____________ &nbsp;&nbsp; **Time spent (approx):** ____________
 

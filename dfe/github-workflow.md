@@ -109,8 +109,8 @@ Examples:
 ```
 session 01: hello world - first run, edited message
 session 02: variables and types - finished examples, log
-session 08: project - music-theory-cli scaffolded
-session 08: project - implemented chord progressions
+session 08: milestone - sand-sim v0.1 scaffolded
+session 08: milestone - sand and water working
 milestone 1: reflection committed
 session 16: project - ascii world generator complete
 milestone 3: participant statement
@@ -162,12 +162,12 @@ Handwritten still has the highest "this is genuine" signal. If you can manage bo
 
 You **don't need** to use branches, pull requests, or any of git's more advanced features. A single `main` branch with linear commits is fine and is what most beginners use.
 
-If you want to stretch yourself, an optional pattern is to use a branch per project:
+If you want to stretch yourself, an optional pattern is to use a branch per milestone:
 
 ```bash
-git switch -c project/music-theory-cli
+git switch -c milestone/sand-sim-v0.1
 # ... work ...
-git push -u origin project/music-theory-cli
+git push -u origin milestone/sand-sim-v0.1
 # Open a pull request on github.com from this branch into main
 # Review your own PR, then merge it
 ```

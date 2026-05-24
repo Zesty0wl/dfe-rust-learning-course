@@ -1,6 +1,0 @@
-[package]
-name = "music_theory_modular"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]

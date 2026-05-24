@@ -1,22 +1,14 @@
-# Session Log — DfE Rust Learning Course
+# DofE Session Log
 
-**Participant name:** ______________________________
-**Award level (Bronze / Silver / Gold):** ______________________________
-**Start date:** ______________________________
-**Target end date:** ______________________________
+A running log of all 24 sessions in one document. Fill in the date and the body of each entry after the session is complete. See [`session-log-template.md`](./session-log-template.md) for the prompt fields.
 
-# Session Log — Digital Version (Optional)
-
-> **Most participants should use the printable booklet** — see [`session-log-printable.md`](./session-log-printable.md) and [`print-checklist.md`](./print-checklist.md). Assessors typically review a physical binder, not a git repository.
->
-> This digital version exists as an alternative for participants who would rather type than handwrite. If you use it, **print the completed file** before handing the binder to your assessor.
+> **You don't have to do it here.** If you're keeping the printed booklet (`session-log-printable.md` → A4 PDF), that's your primary log and this file is optional. If you're using the git-and-fork workflow, this is your primary log and you commit after each entry. See [`README.md`](./README.md) for the two paths.
 
 ---
 
-## Session 1 Log
-**Title:** Why Rust? History, Setup, and the Speed Demo
+## Session 1 — A Window, a Grid, and Your First Pixel
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -28,10 +20,9 @@
 
 ---
 
-## Session 2 Log
-**Title:** Variables, Types, and Mutability
+## Session 2 — Variables, Types, and Giving Sand a Colour
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -43,10 +34,9 @@
 
 ---
 
-## Session 3 Log
-**Title:** Functions, Expressions, and Basic I/O
+## Session 3 — Sand Falls
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -58,10 +48,9 @@
 
 ---
 
-## Session 4 Log
-**Title:** Control Flow
+## Session 4 — Control Flow and a Better Update Loop
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -73,10 +62,9 @@
 
 ---
 
-## Session 5 Log
-**Title:** Pattern Matching and `match`
+## Session 5 — Pattern Matching and Multiple Elements
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -88,10 +76,9 @@
 
 ---
 
-## Session 6 Log
-**Title:** Enums and Strings
+## Session 6 — Enums: Giving Elements Proper Names
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -103,10 +90,9 @@
 
 ---
 
-## Session 7 Log
-**Title:** Mini-Project Build Part 1 — Scale Generator
+## Session 7 — Project Build Part 1: Element Selector and Brush
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -118,10 +104,9 @@
 
 ---
 
-## Session 8 Log
-**Title:** Mini-Project Build Part 2 — Chord Progressions and Polish
+## Session 8 — Project Build Part 2: Polish and Milestone (sand-sim v0.1 ships)
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -131,29 +116,13 @@
 
 ### What I'd like to explore further
 
-> 🎉 **Milestone 1 reached.** Now complete [`milestone-1-reflection.md`](./milestone-1-reflection.md).
+> **Milestone 1 reached.** Complete [`milestone-1-reflection.md`](./milestone-1-reflection.md) before moving on.
 
 ---
 
-## Session 9 Log
-**Title:** Structs and Methods
+## Session 9 — Structs: Giving Cells a Temperature
 **Date:**
-**Time spent (approx):**
-
-### What I did today
-
-### What I learned
-
-### What was hard
-
-### What I'd like to explore further
-
----
-
-## Session 10 Log
-**Title:** Enums with Data and `Option<T>`
-**Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -165,10 +134,9 @@
 
 ---
 
-## Session 11 Log
-**Title:** Collections — `Vec` and `HashMap`
+## Session 10 — Enums with Data and Option: Modelling Reactions
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -180,10 +148,9 @@
 
 ---
 
-## Session 12 Log
-**Title:** Iterators and Closures (Introduction)
+## Session 11 — Fire
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -195,10 +162,9 @@
 
 ---
 
-## Session 13 Log
-**Title:** Error Handling
+## Session 12 — Oil and Explosive Reactions
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -210,10 +176,9 @@
 
 ---
 
-## Session 14 Log
-**Title:** Traits
+## Session 13 — Steam: A State Change
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -225,10 +190,9 @@
 
 ---
 
-## Session 15 Log
-**Title:** Mini-Project Build Part 1 — World Core
+## Session 14 — Acid and the Reactions Architecture
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -240,27 +204,9 @@
 
 ---
 
-## Session 16 Log
-**Title:** Mini-Project Build Part 2 — Render and Polish
+## Session 15 — Project Build Part 1: Lava, Ice, and Chain Reactions
 **Date:**
-**Time spent (approx):**
-
-### What I did today
-
-### What I learned
-
-### What was hard
-
-### What I'd like to explore further
-
-> 🎉 **Milestone 2 reached.** Now complete [`milestone-2-reflection.md`](./milestone-2-reflection.md).
-
----
-
-## Session 17 Log
-**Title:** The Ecosystem — Modules, Crates, and Cargo
-**Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -272,10 +218,25 @@
 
 ---
 
-## Session 18 Log
-**Title:** File I/O and Binary Data
+## Session 16 — Project Build Part 2: Polish and Milestone (sand-sim v0.2 ships)
 **Date:**
-**Time spent (approx):**
+**Time spent:**
+
+### What I did today
+
+### What I learned
+
+### What was hard
+
+### What I'd like to explore further
+
+> **Milestone 2 reached.** Complete [`milestone-2-reflection.md`](./milestone-2-reflection.md) before moving on.
+
+---
+
+## Session 17 — Modules: Taming the Codebase
+**Date:**
+**Time spent:**
 
 ### What I did today
 
@@ -287,10 +248,9 @@
 
 ---
 
-## Session 19 Log
-**Title:** Closures and Iterators (Deep Dive)
+## Session 18 — File I/O: Save and Load
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -302,10 +262,9 @@
 
 ---
 
-## Session 20 Log
-**Title:** Generics and Advanced Traits
+## Session 19 — The Recipe System: Unlocking Elements
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -317,10 +276,9 @@
 
 ---
 
-## Session 21 Log
-**Title:** Final Project Session 1 — WAV Synthesis Engine
+## Session 20 — The Codex UI
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -332,10 +290,9 @@
 
 ---
 
-## Session 22 Log
-**Title:** Final Project Session 2 — MIDI File Parsing
+## Session 21 — New Elements: Gunpowder and Glass
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -347,10 +304,9 @@
 
 ---
 
-## Session 23 Log
-**Title:** Final Project Session 3 — Live MIDI Input
+## Session 22 — New Elements: Concrete and Rust
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -362,10 +318,9 @@
 
 ---
 
-## Session 24 Log
-**Title:** Final Project Session 4 — Polish, Showcase, and What Next
+## Session 23 — Polish and Secrets
 **Date:**
-**Time spent (approx):**
+**Time spent:**
 
 ### What I did today
 
@@ -375,9 +330,18 @@
 
 ### What I'd like to explore further
 
-> 🎉 **Course complete.** Now complete [`milestone-3-reflection.md`](./milestone-3-reflection.md) and [`participant-statement-template.md`](./participant-statement-template.md), then send the whole `dfe/` folder to your assessor.
-
 ---
 
-**Assessor signature:** ______________________________
-**Date:** ______________________________
+## Session 24 — Showcase, Retrospective, and What Next (sand-sim v1.0 ships)
+**Date:**
+**Time spent:**
+
+### What I did today
+
+### What I learned
+
+### What was hard
+
+### What I'd like to explore further
+
+> **Milestone 3 reached.** Complete [`milestone-3-reflection.md`](./milestone-3-reflection.md) and write your participant statement in [`participant-statement-template.md`](./participant-statement-template.md). Then hand the repo (and printed booklet, if you have one) to your assessor.

@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 240" role="img" aria-labelledby="acidTitle acidDesc">
+  <title id="acidTitle">Acid dissolves stone but ignores glass</title>
+  <desc id="acidDesc">Acid drops fall onto a block of stone and dissolve it cell by cell. The same acid falling on a glass beaker leaves it intact.</desc>
+
+  <defs>
+    <linearGradient id="acidBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="540" height="240" fill="url(#acidBg)"/>
+
+  <text x="270" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#66ff33" text-anchor="middle" font-weight="bold">ACID + ?</text>
+
+  <!-- ============ STONE PANEL (left) ============ -->
+  <g transform="translate(40,50)">
+    <text x="100" y="0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="bold">STONE</text>
+
+    <!-- falling acid drop -->
+    <circle r="6" fill="#66ff33">
+      <animate attributeName="cx" values="100;100" dur="2.4s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="20;90" dur="2.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;1;0" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <!-- splash + green tinge on impact -->
+    <circle cx="100" cy="100" r="14" fill="#66ff33" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.6;0" dur="2.4s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="0;0;18;25" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- stone block with cells that fade away over time -->
+    <g>
+      <!-- top row -->
+      <rect x="60"  y="100" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;0;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="74"  y="100" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="88"  y="100" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;0;0;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="102" y="100" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;0;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="116" y="100" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="130" y="100" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;1;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <!-- middle row -->
+      <rect x="60"  y="114" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="74"  y="114" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;1;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="88"  y="114" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;0;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="102" y="114" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;1;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="116" y="114" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;1;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="130" y="114" width="14" height="14" fill="#6b7280">
+        <animate attributeName="opacity" values="1;1;1;1;0;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+      <!-- bottom row stays -->
+      <rect x="60"  y="128" width="14" height="14" fill="#6b7280"/>
+      <rect x="74"  y="128" width="14" height="14" fill="#6b7280"/>
+      <rect x="88"  y="128" width="14" height="14" fill="#6b7280"/>
+      <rect x="102" y="128" width="14" height="14" fill="#6b7280"/>
+      <rect x="116" y="128" width="14" height="14" fill="#6b7280"/>
+      <rect x="130" y="128" width="14" height="14" fill="#6b7280"/>
+    </g>
+
+    <text x="100" y="180" font-family="ui-sans-serif, system-ui" font-size="11" fill="#e6c170" text-anchor="middle">→ stone dissolves</text>
+  </g>
+
+  <!-- ============ GLASS PANEL (right) ============ -->
+  <g transform="translate(320,50)">
+    <text x="100" y="0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" fill="#a3d4ff" text-anchor="middle" font-weight="bold">GLASS</text>
+
+    <!-- falling acid drop -->
+    <circle r="6" fill="#66ff33">
+      <animate attributeName="cx" values="100;100" dur="2.4s" repeatCount="indefinite" begin="1.2s"/>
+      <animate attributeName="cy" values="20;90" dur="2.4s" repeatCount="indefinite" begin="1.2s"/>
+      <animate attributeName="opacity" values="1;1;0" dur="2.4s" repeatCount="indefinite" begin="1.2s"/>
+    </circle>
+    <!-- bounces off (no effect) -->
+    <circle cx="100" cy="100" r="14" fill="#66ff33" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.5;0" dur="2.4s" repeatCount="indefinite" begin="1.2s"/>
+      <animate attributeName="r" values="0;0;12;18" dur="2.4s" repeatCount="indefinite" begin="1.2s"/>
+    </circle>
+
+    <!-- glass block - never changes -->
+    <g>
+      <rect x="60"  y="100" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="74"  y="100" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="88"  y="100" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="102" y="100" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="116" y="100" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="130" y="100" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="60"  y="114" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="74"  y="114" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="88"  y="114" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="102" y="114" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="116" y="114" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="130" y="114" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="60"  y="128" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="74"  y="128" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="88"  y="128" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="102" y="128" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="116" y="128" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+      <rect x="130" y="128" width="14" height="14" fill="#a3d4ff" opacity="0.85"/>
+    </g>
+
+    <text x="100" y="180" font-family="ui-sans-serif, system-ui" font-size="11" fill="#a3d4ff" text-anchor="middle">→ glass untouched</text>
+  </g>
+
+  <text x="270" y="225" font-family="ui-sans-serif, system-ui" font-size="11" fill="#5a6573" text-anchor="middle">why real-world acids are sold in glass bottles</text>
+</svg>

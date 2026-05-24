@@ -32,15 +32,15 @@
 
 ---
 
-### The projects I built
+### The releases I shipped
 
-Describe each of the three projects briefly — what they do, what you're proud of, what they sound or look like.
+Describe each of the three `sand-sim` releases briefly — what they do, what you're proud of, what they look like.
 
-**Project 1 — `music-theory-cli`:**
+**v0.1 — the physics sandbox** (Month 1):
 
-**Project 2 — `world-generator`:**
+**v0.2 — the chemistry sandbox** (Month 2):
 
-**Project 3 — `midi-synth`:**
+**v1.0 — the alchemy discovery game** (Month 3):
 
 ---
 

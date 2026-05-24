@@ -1,305 +1,329 @@
-# Session 1: Why Rust? History, Setup, and the Speed Demo
+# Session 1 — A Window, a Grid, and Your First Pixel
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
+<p align="center">
+  <img src="../../diagrams/hero.svg" alt="Three snapshots of where this project is heading: v0.1 sandbox, v0.2 chemistry, v1.0 alchemy game" width="100%"/>
+</p>
 
-## What You'll Learn
-
-Why Rust exists, why it's worth your time, and how to get a "Hello, World!" running on your own machine. By the end of this session you'll have written and run two Rust programs and watched Rust beat Python by roughly a hundred to one in a fair race.
-
-## The Big Idea
-
-Programming languages have generations. **C** is the grandfather — blazing fast but dangerous; one wrong move and your program crashes or gets hacked. **Python** is the friendly modern option — easy to read, but slow and lets you do all sorts of silly things. **Rust** is the breakthrough: it's *as fast as C*, but it has a system called the **borrow checker** that prevents whole categories of bugs at compile time. Rust literally won't let you write certain classes of broken code.
-
-It has been voted the **most loved programming language** on Stack Overflow's annual developer survey for **nine years running**. It's used in the Linux kernel, parts of the Windows kernel, Firefox, Cloudflare, AWS, Discord (who famously rewrote performance-critical systems from Go to Rust), and the entire WebAssembly ecosystem. That's not a hobby language. That's serious infrastructure.
-
-## Concepts Covered
-
-- The Rust ecosystem: `rustc`, `cargo`, `rustup`
-- `cargo new` to scaffold a project
-- The structure of a tiny Rust program (`fn main`, `println!`)
-- `cargo run` to build and run
-- Why [compiled](../../GLOSSARY.md#compiled-language) languages are dramatically faster than [interpreted](../../GLOSSARY.md#interpreted-language) ones
-
-## Building Towards `music-theory-cli`
-
-Today is mostly motivation and setup, but everything you do later in Month 1 begins with `cargo new` and a `fn main`. By the end of this session you'll have done both at least three times, so the rhythm becomes second nature.
+> **Stuck on a word?** Things like *immutable*, *compiler*, *crate*, *async* are all defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-1/session-01/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-1/session-01/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session you will have a **black window open on your screen** where **clicking draws coloured pixels** on a grid that Rust is rendering 60 times every second.
 
-### 1. The speed demo: Pi by random sampling
+That's it. That's the whole goal. No theory you don't need. We get to the visible thing first.
 
-The mathematician's trick: imagine a square 1 unit on each side, with a quarter-circle of radius 1 fitted inside one corner. The square has area `1`. The quarter-circle has area `π/4`. If you fire random points uniformly into the square and ask "what fraction land inside the quarter-circle?", the answer (eventually) approaches `π/4`. Multiply by 4 and you get π.
+---
 
-> **The maths in one line:** points where `x² + y² ≤ 1` are inside the quarter-circle. So `π ≈ 4 × (points inside) / (total points)`.
+## What you'll learn
 
-Here's the whole idea in one picture:
+- How to start a new Rust project with `cargo new`
+- How to add a library to your project with `cargo add`
+- What a Rust `fn main` looks like
+- What `macroquad` is and the absolute smallest program you can write with it
+- How to store a grid of cells in a `Vec<Vec<u8>>`
+- How to read the mouse and draw rectangles every frame
 
-![Estimating π by throwing darts at a square — 120 random points fired into a unit square, with the ones that land inside the quarter-circle counted as hits. The hit-fraction times 4 approximates π.](./diagrams/monte-carlo-pi.svg)
+---
 
-> **Reading the diagram.** Every dot is one random "dart". **Green** dots landed inside the quarter-circle (`x² + y² ≤ 1` — they "hit"); **red** dots missed (`x² + y² > 1`). With only 120 darts in this picture we get π ≈ 3.03 — close, but wobbly. Crank it up to 100,000,000 darts and you get π to four decimal places. The whole program is a `for` loop that does exactly the test you can see in this diagram, a hundred million times. **That's why the speed of the language matters.**
+## The big idea
 
-We're going to estimate Pi this way using **100 million samples**, in both Python and Rust. Run them both. Time them. Compare.
+You're about to write a **real-time simulation**. That means the program runs a `loop` and does the same set of things — read input, update the world, draw the world — **sixty times every second**, forever, until you close the window. Films are usually 24 frames per second. Video games are 60 or 120. Yours will be 60.
 
-#### The Python version (`examples/pi_python.py`)
+Inside that loop, everything you see on screen is just **rectangles**. Lots of them. The "grid" we'll set up today is a 2D table of numbers — one number per pixel-sized cell — and on every frame we ask: what colour should each cell be? Then we draw them.
 
-```python
-import random
-import time
+That same idea — "a grid of numbers we draw 60 times per second" — is the entire engine for the next 24 sessions. Fire, water, oil, lava, the codex, the save file, the gunpowder explosions, all of it. Everything sits on top of this.
 
-def estimate_pi(n):
-    inside = 0
-    for _ in range(n):
-        x = random.random()
-        y = random.random()
-        if x * x + y * y <= 1.0:
-            inside += 1
-    return 4.0 * inside / n
+So today is short. Setup. One library. One loop. Click. Pixel. Done.
 
-start = time.time()
-result = estimate_pi(100_000_000)
-elapsed = time.time() - start
-print(f"Pi ≈ {result:.6f}")
-print(f"Time: {elapsed:.2f} seconds")
-```
+---
 
-Run it (from the repo root):
+## Building towards `sand-sim`
+
+This session creates the project folder, opens the window, and gets clicks turning into coloured cells. By Session 3 those cells will fall. By Session 5 you'll have three different elements. By Session 8 you'll have shipped v0.1.
+
+Everything starts here.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** You've already worked through [SETUP.md](../../SETUP.md) and [session-00](../session-00/README.md). `rustc --version` and `cargo --version` both work in your terminal. VS Code is installed with the `rust-analyzer` extension. If any of that isn't true, fix it first.
+
+### 1. Make a new project — 2 minutes
+
+Open a terminal **anywhere outside this repo** (your `~/Projects` folder or `Documents` is fine — Cargo can't make a new project inside another Cargo project). Then:
 
 ```bash
-cd month-1/session-01/examples
-python3 pi_python.py
+cargo new sand-sim
+cd sand-sim
 ```
 
-On a modern PC this takes roughly **35–60 seconds**.
+What just happened: Cargo created a folder called `sand-sim/` with:
 
-#### The Rust version (`examples/pi_rust/`)
+- a `Cargo.toml` file — the project's index card. Name, version, list of libraries.
+- a `src/main.rs` file — the actual code. Currently a one-line "Hello, world!".
+
+Open the folder in VS Code:
+
+```bash
+code .
+```
+
+Open `src/main.rs`. You'll see:
 
 ```rust
-use std::time::Instant;
-
-fn estimate_pi(n: u64) -> f64 {
-    let mut rng = fastrand::Rng::new();
-    let mut inside: u64 = 0;
-    for _ in 0..n {
-        let x = rng.f64();
-        let y = rng.f64();
-        if x * x + y * y <= 1.0 {
-            inside += 1;
-        }
-    }
-    4.0 * inside as f64 / n as f64
-}
-
 fn main() {
-    let n: u64 = 100_000_000;
-    let start = Instant::now();
-    let result = estimate_pi(n);
-    let elapsed = start.elapsed();
-    println!("Pi ≈ {:.6}", result);
-    println!("Time: {:.2?}", elapsed);
+    println!("Hello, world!");
 }
 ```
 
-Run it (from the repo root):
+`fn` is `function`. `main` is the special function that every Rust program starts with. `println!` writes a line to the terminal (the `!` means it's a **macro**, not a regular function — we'll explain macros properly later). Run it:
 
 ```bash
-cd month-1/session-01/examples/pi_rust
-cargo run --release
-```
-
-On the same machine: **under 1 second**, and very often under half a second.
-
-> ### 🚀 Why is Rust so much faster?
->
-> Three reasons, mostly:
->
-> 1. **[Compiled](../../GLOSSARY.md#compiled-language) vs [interpreted](../../GLOSSARY.md#interpreted-language).** Rust is translated to native [machine code](../../GLOSSARY.md#machine-code) ahead of time. Python interprets your source one line at a time, every time you run it.
-> 2. **No object overhead.** In Python every number is a wrapped object on the [heap](../../GLOSSARY.md#stack-vs-heap). In Rust an [`f64`](../../GLOSSARY.md#floating-point-number-f32-f64) is just 8 bytes of memory the CPU loves.
-> 3. **No [GIL](../../GLOSSARY.md#global-interpreter-lock-gil).** Python's Global Interpreter Lock means even multi-threaded Python often runs on one core. Rust has no such limitation (we're not even using [threads](../../GLOSSARY.md#thread) here — but it matters when you do).
->
-> Same algorithm. Same machine. Different orders of magnitude. Welcome to systems programming.
-
----
-
-### 2. Install Rust
-
-If you haven't already, follow [`SETUP.md`](../../SETUP.md) for your platform. The minimum you need is `rustc --version` working in a terminal — anything 1.75 or newer is fine.
-
-### 3. Your first Rust program
-
-Open a terminal **anywhere outside the repo** (your `~/Projects` folder is fine) and run:
-
-```bash
-cargo new hello_world
-cd hello_world
 cargo run
 ```
 
-> This is one of the few `cd` commands in the course that *isn't* relative to the repo root — `cargo new` creates a brand-new project wherever you happen to be standing. From Session 2 onwards, every `cd` you'll see starts at the repo root.
+The first run takes a few seconds because Cargo is compiling. You should see `Hello, world!` printed in the terminal. Congratulations: that's a working Rust program.
 
-What just happened?
+### 2. Add `macroquad` — 1 minute
 
-- `cargo new hello_world` created a folder with a `Cargo.toml` (project metadata) and a `src/main.rs` (your code).
-- `cargo run` invoked the compiler and then ran the resulting binary.
+`macroquad` is a small library that gives you a window, a canvas, a mouse, a keyboard, and audio. One command:
 
-Open `src/main.rs` in VS Code (if it's not already showing in the Explorer sidebar, use **File → Open Folder…** to open the `hello_world` folder you just created). It looks like this:
+```bash
+cargo add macroquad
+```
+
+Open `Cargo.toml` again. There's a new line under `[dependencies]`:
+
+```toml
+[dependencies]
+macroquad = "0.4"
+```
+
+That's it. Cargo will download macroquad next time you run `cargo run`.
+
+> **What's a crate?** "Crate" is Rust's word for a package — a library someone else wrote that you can pull into your project. `macroquad` is a crate. `fastrand` (later) is a crate. The repository of all public crates is [crates.io](https://crates.io). You don't need to make an account or anything; `cargo add` just works.
+
+### 3. The smallest possible macroquad program — 3 minutes
+
+Replace **everything** in `src/main.rs` with this:
 
 ```rust
-fn main() {
-    println!("Hello, world!");
+use macroquad::prelude::*;
+
+#[macroquad::main("Sand Sim")]
+async fn main() {
+    loop {
+        clear_background(BLACK);
+        next_frame().await;
+    }
 }
 ```
 
-Three things to notice:
+Save the file. From the terminal in the `sand-sim/` folder:
 
-- **`fn main`** is the entry point. Every binary Rust program starts here. The empty `()` after `main` is the (empty) parameter list.
-- **`println!`** has an exclamation mark because it's a **macro**, not a function. Macros expand into other code at compile time. You'll meet `format!`, `vec!`, `println!`, and a few others throughout the course.
-- **Strings live in double quotes.** Single quotes (`'a'`) are for `char`, a single Unicode character.
+```bash
+cargo run
+```
 
-### 4. Make it personal
+This compile will take **noticeably longer** the first time — macroquad pulls in a handful of dependencies and they all have to build. Two minutes is normal. Subsequent runs are instant.
 
-Edit `src/main.rs`:
+When it finishes, **a black window opens**. It's empty. Move it around. Resize it. Close it (clicking the close button or `Cmd-Q` / `Ctrl-Q` returns control to the terminal).
+
+**You just opened a window in Rust.** First runnable checkpoint hit, well inside the first 20 minutes.
+
+#### What is this code doing?
+
+Line by line:
+
+- `use macroquad::prelude::*;` — bring all the names macroquad commonly exports (like `BLACK`, `clear_background`, `next_frame`, `draw_rectangle`, …) into scope so we don't have to write `macroquad::prelude::BLACK` every time.
+- `#[macroquad::main("Sand Sim")]` — a macro that wraps your `main` function in macroquad's setup code (opens a window titled "Sand Sim", sets up OpenGL, starts the event loop). You only ever write this once per program.
+- `async fn main()` — `async` is needed because macroquad hands control back to the operating system between frames. You'll use the keyword and that's it. **Don't worry about it for now.**
+- `loop { ... }` — runs forever. This is the heart of every real-time program: do the same thing over and over.
+- `clear_background(BLACK);` — paint the whole window black at the start of each frame, so old drawings don't leave streaks.
+- `next_frame().await;` — wait for the next frame to be ready (~16 ms later, which gives you ~60 frames per second). Then the `loop` runs again.
+
+If you remove the `loop`, the window opens and immediately closes. If you remove `next_frame().await`, the program pegs your CPU at 100% as it tries to render as fast as possible. Both are useful experiments — try them and see.
+
+### 4. Add a grid — 5 minutes
+
+Right now nothing happens between `clear_background` and `next_frame`. Let's put a grid of cells in there. Replace `main`:
 
 ```rust
-fn main() {
-    println!("Hello, world!");
-    println!("My name is <your name>.");
-    println!("I am learning Rust.");
+use macroquad::prelude::*;
+
+const COLS: usize = 120;
+const ROWS: usize = 80;
+const CELL_SIZE: f32 = 6.0;
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Sand Sim".to_owned(),
+        window_width: (COLS as f32 * CELL_SIZE) as i32,
+        window_height: (ROWS as f32 * CELL_SIZE) as i32,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
+async fn main() {
+    // The grid: ROWS rows, each containing COLS columns of u8.
+    // 0 means "empty", 1 means "sand" (for now).
+    let mut grid: Vec<Vec<u8>> = vec![vec![0u8; COLS]; ROWS];
+
+    loop {
+        clear_background(BLACK);
+
+        // Draw every non-empty cell as a sand-coloured rectangle.
+        for row in 0..ROWS {
+            for col in 0..COLS {
+                if grid[row][col] != 0 {
+                    let x = col as f32 * CELL_SIZE;
+                    let y = row as f32 * CELL_SIZE;
+                    draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, YELLOW);
+                }
+            }
+        }
+
+        next_frame().await;
+    }
 }
 ```
 
-Run it: `cargo run`. You should see all three lines. The compiler did a full re-build under the hood — this happens silently and very quickly.
+Run it. Same black window, slightly larger. **You don't see anything new yet** — every cell in the grid is `0`, so the drawing loop skips them all. That's expected. We'll feed it some `1`s in step 5.
 
-### 5. Your first calculation
+#### What's in this code?
 
-Replace the file with this:
+- **`const COLS: usize = 120;`** — a constant. Constants never change at runtime. `usize` is the integer type Rust uses for "an index into something" — array positions, vector lengths, that sort of thing. You'll see it a lot.
+- **`window_conf` + `#[macroquad::main(window_conf)]`** — we want a window of a specific size (120 × 80 cells, each 6 pixels wide). The `Conf` struct is macroquad's way of letting you customise the window.
+- **`Vec<Vec<u8>>`** — a vector of vectors of `u8`. A `Vec` is a growable list. A `u8` is an unsigned 8-bit integer (values 0–255). So this is "a list of rows, where each row is a list of bytes." A 2D grid.
+- **`vec![vec![0u8; COLS]; ROWS]`** — the `vec!` macro builds a `Vec`. `vec![0u8; COLS]` makes one row of `COLS` zeros. `vec![<that>; ROWS]` makes `ROWS` copies of it. Net effect: a 80 × 120 grid of zeros.
+- **`let mut grid`** — `let` declares a variable. `mut` means we'll change it (Rust variables are immutable by default — more on this in Session 2).
+- **`for row in 0..ROWS`** — a `for` loop that runs `row = 0, 1, 2, …, ROWS-1`. Nested with the inner `col` loop, we visit every cell in the grid once per frame.
+- **`draw_rectangle(x, y, w, h, colour)`** — macroquad draws a filled rectangle at `(x, y)` with width `w` and height `h`. `x` and `y` are pixel coordinates with `(0, 0)` at the **top-left** of the window. (Game and graphics libraries almost always put `y = 0` at the top — this is normal.)
+
+### 5. React to mouse clicks — 5 minutes
+
+Inside the `loop`, **before** the drawing block, add:
 
 ```rust
-fn main() {
-    let semitones_per_octave = 12;
-    let octaves = 4;
-    let total_notes = semitones_per_octave * octaves;
-    println!("A 4-octave keyboard has {} notes.", total_notes);
-}
+        if is_mouse_button_down(MouseButton::Left) {
+            let (mx, my) = mouse_position();
+            let col = (mx / CELL_SIZE) as usize;
+            let row = (my / CELL_SIZE) as usize;
+            if row < ROWS && col < COLS {
+                grid[row][col] = 1;
+            }
+        }
 ```
 
-Three new things:
+Save. Run. **Click and drag inside the window.** Yellow pixels appear under your cursor.
 
-- `let semitones_per_octave = 12;` — declare a variable.
-- Variables in Rust are **[immutable](../../GLOSSARY.md#immutable) by default**. We'll cover `mut` next session.
-- The `{}` in the format string is a placeholder filled in by the values that follow.
+> **The Wow Moment.** Click on the window. You're drawing on a grid that Rust is rendering 60 times a second. Nothing falls yet, nothing reacts — but every cell that holds a `1` becomes a yellow rectangle on the next frame. *You just built the first 90 seconds of a falling-sand game.* Send a screenshot to someone.
+>
+> *(Drop the PNG into [`screenshots/`](../../screenshots/) as `01-first-pixel.png` — that's the first entry in the [screenshot checklist](../../screenshots/README.md).)*
 
-Run it. You should see `A 4-octave keyboard has 48 notes.` (Sound right? A piano has 88 keys across 7+ octaves; we'll build up to a full piano in Session 4.)
+#### What's in the mouse code?
+
+- **`is_mouse_button_down(MouseButton::Left)`** — returns `true` every frame the left button is held down. (`is_mouse_button_pressed` would only return `true` on the frame the click *starts* — try swapping it and notice the difference: you can only place one pixel per click.)
+- **`mouse_position()`** returns the cursor's pixel position as `(f32, f32)` — `(mx, my)`.
+- **`(mx / CELL_SIZE) as usize`** — divide by the cell width to get the column index. The `as usize` is a **cast** — Rust never auto-converts between number types, so we tell it explicitly.
+- **`if row < ROWS && col < COLS`** — the **bounds check**. If you happen to click slightly outside the window (which can happen for a frame as the cursor leaves), the calculated `row`/`col` could be out of range. Indexing a `Vec` with an out-of-range value crashes your program. The `if` prevents that. **You will write code like this constantly.** Rust forces you to think about edges; it's part of why Rust code is so reliable.
 
 ---
 
-## Common Mistakes
+## Common mistakes
 
-### ❌ Forgetting the `!` on `println`
+### Window opens then immediately closes
 
-```rust
-fn main() {
-    println("Hello!");   // ❌ no exclamation mark
-}
-```
+You probably removed the `loop { ... }`. Without a loop, `main` runs once, returns, and the program exits.
 
-```
-error[E0423]: expected function, found macro `println`
-```
+### Yellow pixels appear in the wrong place
 
-**Fix:** `println!("Hello!");`. The exclamation mark identifies macros.
+Either the math in `col`/`row` is wrong, or you mixed up `(x, y)` with `(col, row)` somewhere. Remember: **`x` is the horizontal pixel and corresponds to the column; `y` is the vertical pixel and corresponds to the row.** Rows go down; columns go across.
 
-### ❌ Forgetting the semicolon
+### Program panics with `index out of bounds: the len is 80 but the index is 80`
 
-```rust
-fn main() {
-    let x = 5
-    println!("{}", x);   // ❌ no `;` after `let x = 5`
-}
-```
+Your bounds check is wrong. Indexes go from `0` to `len - 1` (inclusive), so a `Vec` of length 80 has valid indexes `0..79`. The check `if row < ROWS` is correct; `if row <= ROWS` would let `row = 80` through and crash.
 
-```
-error: expected `;`, found `println`
-```
+### Compiler complains: `cannot find macro 'vec' in this scope`
 
-**Fix:** put a `;` at the end of `let x = 5;`. (We'll see expressions vs statements properly in Session 3 — the rule isn't as arbitrary as it looks.)
+Make sure the `use macroquad::prelude::*;` line is at the top of the file. (`vec!` is in the standard library prelude, which macroquad re-exports.)
 
-### ❌ Single quotes around a string
+### Compile is *really* slow
 
-```rust
-println!('Hello');   // ❌ single quotes are for char only
-```
+The first compile of macroquad takes 1–2 minutes; subsequent compiles take seconds. If every single edit is taking minutes, check you're running `cargo run` (debug mode), not `cargo run --release` — release mode is much slower to compile. Leave `--release` for when you're showing off the finished sim.
 
-**Fix:** double quotes. `'a'` is the character `a`; `"a"` is the string `"a"`. Two different types.
+### Black window with no input on Linux
 
-### ❌ Running `cargo run` outside a project folder
-
-```
-error: could not find `Cargo.toml` in `/Users/leo` or any parent directory
-```
-
-**Fix:** `cd` into the project folder first. Cargo needs a `Cargo.toml` to know what to build.
+You're probably on Wayland. macroquad uses X11; XWayland is usually present and handles this automatically, but on some setups you need to log out and back in on an X11 session. See [SETUP.md](../../SETUP.md) for details.
 
 ---
 
-## Session Challenge
+## Session challenge
 
-Open the `pi_rust` example. The current run uses 100 million samples. Try changing it to 1 million, 10 million, 1 billion. How does the runtime scale? How does the accuracy of Pi change? What happens if you also re-run the Python version with 1 billion samples? (Maybe set a kettle going while you wait for that one.)
+Pick one and try it. **No solution is provided** — that's the whole point of a challenge.
 
-> Hint: there's nothing in the code that needs explaining for this challenge. You're just changing one number and observing.
+1. **Right-click erases.** Add another `if` for `MouseButton::Right` that sets the clicked cell back to `0`.
+2. **Pick a different colour.** Change `YELLOW` to `RED`, or use `Color::new(r, g, b, a)` with values between `0.0` and `1.0` to make your own. (`Color::new(0.95, 0.78, 0.4, 1.0)` is a nice warm sand.)
+3. **Make the cells bigger.** Drop `CELL_SIZE` to `4.0` for a denser grid, or up to `12.0` for chunky pixels. Notice the window resizes automatically.
+4. **Show the cell coordinates.** Add `draw_text(&format!("{}, {}", col, row), 8.0, 16.0, 20.0, WHITE);` just before `next_frame().await;` and watch them update as you move the mouse.
 
 ---
 
-## Quick Reference
+## Quick reference
 
-| Thing | Syntax |
+| What | Code |
 |---|---|
-| New project | `cargo new my_thing` |
+| New project | `cargo new sand-sim` |
+| Add a library | `cargo add macroquad` |
 | Run | `cargo run` |
-| Run optimised | `cargo run --release` |
-| Entry point | `fn main() { ... }` |
-| Print a line | `println!("text");` |
-| Print with values | `println!("x = {}", x);` |
-| Declare variable | `let name = value;` |
-| Comment | `// line comment` or `/* block */` |
+| Run fast | `cargo run --release` |
+| Open window | `#[macroquad::main("title")] async fn main() { loop { … next_frame().await; } }` |
+| Clear screen | `clear_background(BLACK);` |
+| Draw a rectangle | `draw_rectangle(x, y, w, h, YELLOW);` |
+| Mouse held down? | `is_mouse_button_down(MouseButton::Left)` |
+| Cursor pixel position | `let (mx, my) = mouse_position();` |
+| 2D grid of bytes | `let mut g: Vec<Vec<u8>> = vec![vec![0u8; COLS]; ROWS];` |
+| Cast a number | `(mx / CELL_SIZE) as usize` |
 
 ---
 
-## Further Reading
+## DofE log reminder
 
-Curated extra material on the topics covered in this session (Why Rust + Pi speed demo). All free; all current as of writing.
+Fill in this session's page in your printed booklet — or open [`dfe/session-log.md`](../../dfe/session-log.md) and add a few lines under **Session 1**:
 
-- [**The Rust Programming Language** — Foreword & Introduction](https://doc.rust-lang.org/book/foreword.html) — The official book, free online, written by the Rust team. The single best long-form intro.
-- [**A half-hour to learn Rust** — Amos (fasterthanli.me)](https://fasterthanli.me/articles/a-half-hour-to-learn-rust) — Whirlwind tour of the whole language in one page. Re-read it after Session 8 and you'll understand far more of it.
-- [**Stack Overflow Developer Survey** — Most-admired languages](https://survey.stackoverflow.co/2024/technology#admired-and-desired) — Where the 'voted most loved' claim comes from. Worth scanning the rest of the survey too.
-- [**Wikipedia — Monte Carlo method**](https://en.wikipedia.org/wiki/Monte_Carlo_method) — Background on the technique we used to estimate π. Used everywhere from physics to finance to game AI.
-- [**3Blue1Brown — *Why is pi here? And why squared?***](https://www.youtube.com/watch?v=d-o3eB9sfls) — Beautiful 18-minute video on a different way π appears in random processes. Pure maths candy.
+- One thing that worked
+- One thing that didn't (and how you fixed it, even if "I copy-pasted the working code")
+- One question you still have
+
+5–10 minutes. Then drop your screenshot of the first window opening (and another of your first pixel) into [`screenshots/`](../../screenshots/) as `01-first-window.png` and `01-first-pixel.png`. Commit them:
+
+```bash
+git add screenshots/01-*.png dfe/session-log.md
+git commit -m "session 01: opened the window, drew first pixel"
+```
+
+Your DofE evidence pack just got its first entry.
+
+---
+
+## Further reading (optional)
+
+- [**The Rust Programming Language** — *Foreword* and *Chapter 1*](https://doc.rust-lang.org/book/foreword.html) — the official book, free online. The bits we used today are in Chapter 1.
+- [**`macroquad` documentation**](https://docs.rs/macroquad/latest/macroquad/) — the function reference for everything macroquad gives you.
+- [**`macroquad` examples on GitHub**](https://github.com/not-fl3/macroquad/tree/master/examples) — short single-file demos showing what else macroquad can do. Browse for inspiration.
 
 ---
 
 ## Stuck?
 
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+- The Rust compiler is unusually good at telling you what's wrong and often how to fix it. **Read the error from the top.** It almost always tells you the line, the problem, and a suggestion.
+- For the most common error messages, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates them into plain English.
+- Real help: [Rust Discord `#beginners`](https://discord.gg/rust-lang-community) is friendly and fast.
 
 ---
-## DofE Log Reminder
 
-> 📝 You've finished Session 1. Before you close the laptop, spend 5 minutes filling in **Session 1** in [`dfe/session-log.md`](../../dfe/session-log.md). Capture the speed difference you saw — that number is fun to look back on. It's your DofE evidence and it only takes a few minutes while it's fresh.
+→ Next: [Session 2 — Variables, Types, and Giving Sand a Colour](../session-02/README.md)

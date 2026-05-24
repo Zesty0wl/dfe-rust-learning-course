@@ -1,8 +1,0 @@
-[package]
-name = "music-theory-cli"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-# Optional Session 8 stretch goal:
-# colored = "2.1"

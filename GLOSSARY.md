@@ -1,270 +1,129 @@
 # Glossary
 
-Plain-English definitions of every technical term used in this course, with links to deeper explanations. Use this as a quick reference whenever a session uses a word you haven't met before — and don't feel bad about checking it as often as you need. Real developers do.
-
-Terms are grouped roughly by topic so related ideas sit together. If you're hunting for one, try `Ctrl+F` / `⌘F`.
+Every piece of jargon used in this course, in plain English. Skim this when something doesn't make sense.
 
 ---
 
-## Languages and how they run
+## Rust language
 
-### Compiled language
+**Borrow** — Reading or writing data through a reference (`&x` or `&mut x`) rather than taking ownership of it. The compiler enforces strict rules: many readers OR one writer, never both at the same time.
 
-A language whose programs are translated into machine code (the CPU's native instructions) **once, ahead of time**, by a tool called a **compiler**. The resulting file (a "binary" or "executable") runs directly on the hardware. Rust, C, C++, and Go are compiled.
+**Borrow checker** — The part of the Rust compiler that enforces the borrow rules. When it rejects your code, it's usually right — and the error message will tell you what's wrong. It's a co-pilot, not an enemy.
 
-Compilation makes programs much faster but adds a build step every time you change the code. *Read more:* [Compiled language — Wikipedia](https://en.wikipedia.org/wiki/Compiled_language).
+**Cargo** — Rust's build tool. `cargo new`, `cargo build`, `cargo run`, `cargo add` — that's the everyday vocabulary.
 
-### Interpreted language
+**Cargo.toml** — The file at the root of every Cargo project that lists its dependencies (other crates) and metadata.
 
-A language whose programs are read and executed **one line at a time**, every time you run them, by another program called an **interpreter**. Python, Ruby, and (classically) JavaScript are interpreted.
+**Closure** — An anonymous function that can capture variables from the surrounding scope. Written like `|x| x + 1`. Used heavily with iterators.
 
-Interpreted languages are quicker to start tinkering with but usually slower at runtime than compiled ones. *Read more:* [Interpreter (computing) — Wikipedia](https://en.wikipedia.org/wiki/Interpreter_(computing)).
+**Compiled** — Translated from source code into a native binary by `cargo build`. The resulting file can run directly on your CPU without any other program present. The opposite of *interpreted*, where every time you run the program, another program reads your source code one line at a time and does what it says.
 
-### Compiler
+**Crate** — A Rust library or package. `macroquad` is a crate. `serde` is a crate. Crates live on <https://crates.io> and are added to your project with `cargo add <name>`.
 
-The program that turns your source code into something a computer can run. For Rust, the compiler is called `rustc`. It also checks your program for errors before it produces a binary — most of Rust's safety guarantees come from these checks. *Read more:* [Compiler — Wikipedia](https://en.wikipedia.org/wiki/Compiler).
+**Derive** — A way to automatically generate boilerplate code for a struct or enum, written as `#[derive(Debug, Clone)]` above the definition. Saves typing.
 
-### Machine code
+**Enum** — A type with a finite, named set of values. `CellType::Sand` is one variant of the enum `CellType`. The compiler forces you to handle every variant in a `match`.
 
-The raw numeric instructions a CPU actually executes (e.g. "add register 1 to register 2"). You almost never read or write it by hand; the compiler produces it for you. *Read more:* [Machine code — Wikipedia](https://en.wikipedia.org/wiki/Machine_code).
+**Generics** — Code that works with multiple types, written once. `Vec<T>` is generic — `T` can be anything. `fn biggest<T: Ord>(items: &[T]) -> &T` is a generic function.
 
-### Toolchain
+**Immutable** — Cannot be changed after creation. `let x = 5` makes `x` immutable; `let mut x = 5` makes it mutable. Rust defaults to immutable, which catches bugs.
 
-The collection of tools you need to build and run programs in a language: compiler, linker, package manager, formatter, etc. Rust's toolchain is `rustup` (manager) + `rustc` (compiler) + `cargo` (everything else). *Read more:* [Toolchain — Wikipedia](https://en.wikipedia.org/wiki/Toolchain).
+**Iterator** — A value you can walk through one element at a time. `vec.iter()`, `0..10`, and `text.chars()` are all iterators. They chain: `vec.iter().filter(…).map(…).collect()`.
 
-### Garbage collection (GC)
+**Lifetime** — A compile-time annotation describing how long a reference is valid. Usually inferred; you only write them out explicitly when the compiler asks.
 
-An automatic memory-cleanup system used by languages like Python, Java, and JavaScript. The runtime periodically pauses your program to find and free memory you're no longer using. Convenient, but it costs CPU time and adds unpredictable pauses. **Rust has no garbage collector** — its ownership system frees memory at exactly the right moment, with no runtime cost. *Read more:* [Garbage collection (computer science) — Wikipedia](https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)).
+**Macro** — A piece of code that expands into more code at compile time. `println!` is a macro (the `!` is the giveaway). So is `vec![1, 2, 3]`.
 
-### Global Interpreter Lock (GIL)
+**Match** — Rust's pattern-matching expression. Like a `switch` statement on steroids — the compiler forces you to handle every case.
 
-A locking mechanism in CPython (the standard Python interpreter) that prevents more than one thread from running Python code at the same time, even on a multi-core CPU. It's the reason Python is famously bad at CPU-bound multithreading. Rust has no equivalent. *Read more:* [Global interpreter lock — Wikipedia](https://en.wikipedia.org/wiki/Global_interpreter_lock).
+**Module** — A namespace inside a crate. Declared with `mod` and brought into scope with `use`. Used to split a project across multiple files.
 
----
+**Option** — The enum `Option<T>` with two variants: `Some(value)` and `None`. Rust's replacement for null pointers. You can't ignore `None` — the compiler makes you handle it.
 
-## Variables, types, and memory
+**Ownership** — Every value in Rust has exactly one owner. When the owner goes out of scope, the value is dropped. This is how Rust manages memory without a garbage collector.
 
-### Variable / binding
+**Result** — The enum `Result<T, E>` with two variants: `Ok(value)` and `Err(error)`. Rust's replacement for exceptions. Combine with the `?` operator to bubble errors up.
 
-A named place to store a value. In Rust we more correctly say **binding** because by default a variable can't change once it's been set — you're binding the name to a value, not assigning to a mutable slot. *Read more:* [Variable (computer science) — Wikipedia](https://en.wikipedia.org/wiki/Variable_(computer_science)).
+**rustup** — The installer for Rust. Use it to install Rust itself and to switch between stable/beta/nightly toolchains.
 
-### Immutable
+**Slice** — A view into part of a `Vec` or array. Written `&v[2..5]`. Cheap, doesn't copy.
 
-Cannot be changed after it's been created. In Rust, `let x = 5;` creates an *immutable* binding — try to write `x = 6;` and the compiler refuses. Immutability prevents a huge class of bugs in larger programs. *Read more:* [Immutable object — Wikipedia](https://en.wikipedia.org/wiki/Immutable_object).
+**Stable toolchain** — The released version of Rust. New stable versions ship every six weeks. This course uses stable throughout.
 
-### Mutable
+**Struct** — A custom type with named fields. The basic building block of Rust data design. `struct Cell { temperature: f32 }`.
 
-Can be changed after it's been created. Rust requires you to explicitly opt in with the `mut` keyword: `let mut x = 5;` lets you later write `x = 6;`. The opt-in design makes the *exceptions* visible. *Read more:* [Rust Book — Variables and Mutability](https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html).
+**Trait** — A set of methods that a type can implement. Like an interface in Java or a protocol in Swift. `Display`, `Debug`, `Clone` are traits. You can write your own.
 
-### Type / type system
+**Tuple** — A fixed-length anonymous collection of values, possibly of different types: `(3, "hello", 4.2)`. Access with `.0`, `.1`, `.2`.
 
-A **type** classifies a value (e.g. "this is a 64-bit integer", "this is a string"). A **type system** is the set of rules the compiler uses to make sure you only do sensible things with each type — e.g. you can't add a string to an integer without an explicit conversion. *Read more:* [Type system — Wikipedia](https://en.wikipedia.org/wiki/Type_system).
+**Type inference** — The compiler figuring out a type from context. `let x = 5` — `x` is `i32` because that's the default integer. You only have to write types when the compiler can't guess.
 
-### Type inference
-
-The compiler working out the type of a value from context, so you don't have to spell it out. `let n = 42;` — Rust infers `n: i32`. *Read more:* [Type inference — Wikipedia](https://en.wikipedia.org/wiki/Type_inference).
-
-### Statically typed
-
-The compiler checks every type at compile time, before the program runs. Mismatches become errors. Rust, Java, C, Go, TypeScript are statically typed. *Read more:* [Type system — Static type checking — Wikipedia](https://en.wikipedia.org/wiki/Type_system#Static_type_checking).
-
-### Dynamically typed
-
-Types are checked while the program runs — variables can hold any type. Python, JavaScript (without TypeScript), Ruby are dynamic. Easier to start, easier to break. *Read more:* [Type system — Dynamic type checking — Wikipedia](https://en.wikipedia.org/wiki/Type_system#Dynamic_type_checking).
-
-### Stack vs heap
-
-Two different parts of memory a program uses while running.
-
-- The **stack** is fast, fixed-size, and freed automatically when a function returns. Local values of known size go here.
-- The **heap** is larger, slower, and you ask for memory explicitly. Things whose size isn't known at compile time (e.g. a `String` whose length depends on user input) go here.
-
-Most languages hide this distinction. Rust shows it to you because being explicit about where a value lives is what lets the compiler guarantee memory safety with no garbage collector. *Read more:* [Stack-based memory allocation — Wikipedia](https://en.wikipedia.org/wiki/Stack-based_memory_allocation), [Memory management — Heap allocation](https://en.wikipedia.org/wiki/Memory_management#HEAP).
-
-### Floating-point number (`f32`, `f64`)
-
-A way of storing real numbers (with decimal points) using a small fixed amount of memory. `f64` is 64 bits and is the default in Rust; `f32` is 32 bits and faster on some hardware. They can't represent every real number exactly — `0.1 + 0.2 != 0.3` for famous reasons. *Read more:* [IEEE 754 floating point — Wikipedia](https://en.wikipedia.org/wiki/IEEE_754), [What every computer scientist should know about floating-point arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html).
-
-### Integer overflow
-
-When an arithmetic operation produces a result too large for the type holding it (e.g. adding 1 to the largest possible `u8`, which is 255). In debug builds, Rust panics; in release builds, it wraps around. Either way, Rust forces you to be aware of it. *Read more:* [Integer overflow — Wikipedia](https://en.wikipedia.org/wiki/Integer_overflow).
-
-### Shadowing
-
-Re-declaring a name with a new `let` so the old value is hidden by a new one (possibly of a different type). Different from mutation — the old value is gone, not modified. *Read more:* [Variable shadowing — Wikipedia](https://en.wikipedia.org/wiki/Variable_shadowing).
+**Vec** — A growable array. The workhorse of Rust data structures. `Vec<T>` holds any number of `T`s.
 
 ---
 
-## Rust-specific concepts
+## Simulation, cellular automata, games
 
-### Ownership
+**Boundary condition** — What happens at the edge of a simulation grid. Common choices: stop, wrap around, reflect. In `sand-sim` the edge is solid — particles stop at it.
 
-Rust's central memory rule: every value has a single owner (a variable). When the owner goes out of scope, the value is dropped (memory freed). This is how Rust is memory-safe with no garbage collector. *Read more:* [Rust Book — What is Ownership?](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html).
+**Brush** — In a paint or sandbox tool, the area you affect with a single click. The course's brush is a filled circle; the radius scales with the scroll wheel.
 
-### Borrow / borrowing / borrow checker
+**Cellular automaton** — A simulation made up of a grid of cells, where each cell updates based on simple local rules about its neighbours. Conway's Game of Life is the classic example. `sand-sim` is one too.
 
-Instead of giving away ownership, you can let other code **borrow** a value temporarily, with `&value` (read-only) or `&mut value` (read-write). The compiler component called the **borrow checker** enforces the rules: at any moment, you can have either many readers OR one writer, never both. *Read more:* [Rust Book — References and Borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html).
+**Chunk** — A small fixed-size square of the simulation grid. Bigger sims store the world as a grid of chunks for speed and to support effectively-infinite worlds.
 
-### Reference
+**Codex** — In the alchemy game (Month 3), the in-game catalogue of discovered elements. Inspired by the Pokédex.
 
-A pointer (memory address) plus the compiler's promise that the thing it points to is still valid. `&` makes a shared reference, `&mut` an exclusive one. *Read more:* [Rust Reference — References](https://doc.rust-lang.org/reference/types/pointer.html#shared-references-).
+**Convection** — Heat-driven movement of fluids. Hot water rises, cool water sinks, and you get a cycle. Visible in `sand-sim` Month 2 when steam rises off boiling water.
 
-### Lifetime
+**Emergent behaviour** — Complex patterns that come out of simple rules. Sand piles forming a natural angle of repose from "swap with the cell below if empty, otherwise try diagonal" is emergent behaviour.
 
-A region of code during which a reference is valid. Most of the time the compiler works lifetimes out for you; occasionally you have to spell them out using names like `'a`. *Read more:* [Rust Book — Validating References with Lifetimes](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html).
+**Frame** — A single update + redraw of the simulation. 60fps means 60 frames per second — the simulation updates 60 times every second.
 
-### Trait
+**fps (frames per second)** — How many times per second the simulation updates. 60fps is the standard target. Below ~30fps things start to feel laggy.
 
-A description of behaviour — a set of methods a type must provide to "implement" the trait. Similar to interfaces in Java/C# or protocols in Swift, but more powerful. `Iterator`, `Display`, and `Debug` are built-in traits. *Read more:* [Rust Book — Traits](https://doc.rust-lang.org/book/ch10-02-traits.html).
+**Grid coordinate** — Position on the simulation grid, measured in cells (not pixels). The cell at `(x, y) = (10, 3)` is 10 cells from the left and 3 cells from the top.
 
-### Generic / generics
+**Heat map** — A visualisation where colour represents temperature. In Sessions 9 onward, optionally pressing `T` overlays a red-orange-yellow gradient on the grid.
 
-Code parameterised over types — e.g. `Vec<T>` is a vector of *some* type `T`, and the same code works for `Vec<i32>`, `Vec<String>`, etc. Compiles to a separate fast version for each concrete type used. *Read more:* [Rust Book — Generic Data Types](https://doc.rust-lang.org/book/ch10-01-syntax.html).
+**Particle** — Loosely, any cell in the simulation grid that isn't empty. A sand grain is a particle; a wall stone is a particle; a fire spark is a particle.
 
-### Macro
+**Recipe** — In the alchemy game, a hidden combination that produces a new element. Discovered by experimentation.
 
-Code that writes other code at compile time. You can spot macros in Rust because they end with `!` — `println!`, `vec!`, `format!`. *Read more:* [Rust Book — Macros](https://doc.rust-lang.org/book/ch19-06-macros.html).
+**Spawn** — Create a new cell of a given type at a given location. The mouse spawns particles when you click; reactions spawn particles when they fire.
 
-### Crate
-
-A Rust package. Crates can be **binary** (produce an executable) or **library** (code other crates can use). Cargo is the tool for managing crates. *Read more:* [Rust Book — Packages and Crates](https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html).
-
-### Cargo
-
-Rust's official build tool, package manager, and test runner. Every command in this course that starts with `cargo` is talking to it. *Read more:* [The Cargo Book](https://doc.rust-lang.org/cargo/).
-
-### Enum
-
-A type whose values are one of a fixed set of named variants — and in Rust each variant can carry its own data. Powerful for modelling "this could be one of several different things". *Read more:* [Rust Book — Enums and Pattern Matching](https://doc.rust-lang.org/book/ch06-00-enums.html).
-
-### Struct
-
-A type that groups several named fields together — e.g. a `Point { x: f64, y: f64 }`. *Read more:* [Rust Book — Using Structs](https://doc.rust-lang.org/book/ch05-01-defining-structs.html).
-
-### Pattern matching / `match`
-
-Rust's `match` keyword lets you take apart a value (especially an enum) and react to each case, with the compiler checking you've handled every possibility. *Read more:* [Rust Book — The match Control Flow Construct](https://doc.rust-lang.org/book/ch06-02-match.html).
-
-### Iterator
-
-A value that produces a sequence of items, one at a time, on demand. Almost everything in Rust that can be looped over implements the `Iterator` trait. *Read more:* [Rust Book — Iterators](https://doc.rust-lang.org/book/ch13-02-iterators.html).
-
-### Closure
-
-An anonymous function that can capture variables from the surrounding scope. Written `|x| x + 1` or `|x, y| { x + y }`. *Read more:* [Rust Book — Closures](https://doc.rust-lang.org/book/ch13-01-closures.html).
-
-### `Result` and `Option`
-
-Rust's two main "this might not exist / might fail" types.
-
-- `Option<T>` is either `Some(value)` or `None` — for things that might be absent.
-- `Result<T, E>` is either `Ok(value)` or `Err(error)` — for things that might fail.
-
-You handle them with `match`, `?` (the question-mark operator), or methods like `unwrap`. *Read more:* [Rust Book — Error Handling](https://doc.rust-lang.org/book/ch09-00-error-handling.html).
-
-### Panic
-
-Rust's term for a controlled crash. When something has gone catastrophically wrong (e.g. you indexed past the end of a vector) the program "panics" — it prints a message and exits. Different from a recoverable error (`Result`). *Read more:* [Rust Book — Unrecoverable Errors with panic!](https://doc.rust-lang.org/book/ch09-01-unrecoverable-errors-with-panic.html).
+**Update loop** — The function that runs once per frame and applies all the physics/chemistry rules to the grid. The heart of the simulation.
 
 ---
 
-## Concurrency and async
+## Chemistry (light touch)
 
-### Thread
+See [`CHEMISTRY-PRIMER.md`](./CHEMISTRY-PRIMER.md) for the longer treatment. Short definitions:
 
-An independent path of execution within a program, scheduled by the operating system. Multi-threaded programs can use multiple CPU cores at once. *Read more:* [Thread (computing) — Wikipedia](https://en.wikipedia.org/wiki/Thread_(computing)).
+**Combustion** — A fast oxidation reaction that releases heat and light. Burning wood, burning oil. In the sim: fuel + heat above ignition temperature → fire.
 
-### Concurrency vs parallelism
+**Endothermic / exothermic** — Endothermic reactions absorb heat (ice melting, water boiling). Exothermic reactions release heat (combustion, lava cooling). The sim models both.
 
-- **Concurrency** is about *structure* — your program is organised so multiple things are *in progress* at once. They don't have to literally run simultaneously.
-- **Parallelism** is about *execution* — multiple things are literally running at the same instant on different CPU cores.
+**Ignition temperature** — The temperature at which a material catches fire. Different fuels have different ignition temperatures; in the sim each cell type stores this as a constant.
 
-You can have one without the other. *Read more:* [Concurrent computing — Wikipedia](https://en.wikipedia.org/wiki/Concurrent_computing), Rob Pike's classic talk [Concurrency is not parallelism](https://go.dev/blog/waza-talk).
+**Oxidation** — A chemical reaction where a material loses electrons to oxygen. Burning is fast oxidation; rusting is slow oxidation. The sim models the rusting of iron in Session 22.
 
-### Async / `async`/`await`
+**Phase change** — A material switching between solid, liquid, and gas. Water → steam is a phase change driven by heat. The sim models it as a temperature threshold.
 
-A way of writing code that does many slow things (mostly I/O — network, disk) without using one OS thread per task. Rust has `async` functions and `.await`; the actual work is run by a *runtime* like Tokio. *Read more:* [Async Book](https://rust-lang.github.io/async-book/), [Asynchronous I/O — Wikipedia](https://en.wikipedia.org/wiki/Asynchronous_I/O).
-
-### Channel
-
-A typed pipe between threads — one side sends messages, the other receives them. Rust's standard library provides `mpsc` (multi-producer, single-consumer) channels. *Read more:* [Rust Book — Message passing](https://doc.rust-lang.org/book/ch16-02-message-passing.html).
+**Reactant / product** — In a chemical equation, the inputs and the outputs. `water + sodium → sodium hydroxide + hydrogen` has two reactants and two products. The sim's reaction system mirrors this shape exactly.
 
 ---
 
-## Tools and workflow
+## DofE, repo workflow, miscellaneous
 
-### Git
+**Assessor** — The person who signs off your DofE Skill section. Cannot be a parent or guardian. Doesn't need to be a Rust expert. See [`dfe/assessor-briefing.md`](./dfe/assessor-briefing.md).
 
-The most widely-used **version control** system. It tracks every change to your code over time so you can rewind, branch, and collaborate. Created by Linus Torvalds for the Linux kernel. *Read more:* [Git — Wikipedia](https://en.wikipedia.org/wiki/Git), [Pro Git Book](https://git-scm.com/book/en/v2) (free).
+**Commit** — A snapshot of your code saved in git. `git commit -m "message"` records what you've done; `git push` sends it to GitHub.
 
-### GitHub
+**Milestone** — One of the three project releases: `sand-sim` v0.1, v0.2, v1.0. Sits at the end of each month.
 
-A website built on top of git for hosting and collaborating on code repositories. Owned by Microsoft. Where this course lives. *Read more:* [GitHub — Wikipedia](https://en.wikipedia.org/wiki/GitHub).
+**Pre-flight** — Session 00. The one-off setup that happens before Session 1: install Rust, fork the repo, make your first commit. ~45 minutes.
 
-### Repository / repo
+**Pull request (PR)** — A proposed change to a git repo, ready to be reviewed and merged. You won't need to open one for the course itself, but it's the standard way to contribute to open-source projects.
 
-A folder under git's control. Contains your code plus a hidden `.git/` directory with the full history. *Read more:* [Git glossary — Repository](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiderepositoryarepository).
-
-### Commit
-
-A saved snapshot of your project at one moment, with a message describing what changed. The unit of history in git. *Read more:* [Git basics — Recording changes](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository).
-
-### Fork
-
-A server-side copy of a GitHub repository under your own account. Used to propose changes to someone else's project, or — as in this course — to take a copy you can edit and commit to as your own working log. *Read more:* [GitHub Docs — About forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks).
-
-### Clone
-
-A local copy of a git repository, downloaded with `git clone`. *Read more:* [git-clone — Documentation](https://git-scm.com/docs/git-clone).
-
-### Push / pull
-
-`git push` sends your local commits up to the remote (e.g. GitHub). `git pull` fetches and merges new commits from the remote into your local copy. *Read more:* [git-push](https://git-scm.com/docs/git-push), [git-pull](https://git-scm.com/docs/git-pull).
-
-### Semantic versioning (SemVer)
-
-The convention `MAJOR.MINOR.PATCH` (e.g. `1.4.7`) used by `crates.io` and most open-source ecosystems. Increment MAJOR for breaking changes, MINOR for new features, PATCH for bug fixes. *Read more:* [semver.org](https://semver.org/).
-
-### Linker
-
-The tool that combines compiled object files plus libraries into the final executable. Usually invoked automatically by the compiler — you only notice it when it fails. *Read more:* [Linker (computing) — Wikipedia](https://en.wikipedia.org/wiki/Linker_(computing)).
-
----
-
-## Algorithms and concepts you'll meet
-
-### Monte Carlo method
-
-A class of algorithms that uses **random sampling** to estimate things that would be hard to calculate directly. Used in Session 1 to estimate Pi. Named after the Monte Carlo Casino. *Read more:* [Monte Carlo method — Wikipedia](https://en.wikipedia.org/wiki/Monte_Carlo_method).
-
-### Hash function
-
-A function that maps any input to a fixed-size value (the "hash"), in a way that small changes to the input produce wildly different outputs. Used in Session 15 for procedural generation. *Read more:* [Hash function — Wikipedia](https://en.wikipedia.org/wiki/Hash_function).
-
-### Linear Congruential Generator (LCG)
-
-A simple, fast pseudo-random number generator using `next = (a * current + c) mod m`. Not suitable for cryptography but perfectly fine for visual procedural generation. *Read more:* [Linear congruential generator — Wikipedia](https://en.wikipedia.org/wiki/Linear_congruential_generator).
-
-### Sample rate (audio)
-
-How many times per second a continuous audio signal is measured. CD-quality is **44 100 Hz**. Higher = closer to the original waveform. *Read more:* [Sampling (signal processing) — Wikipedia](https://en.wikipedia.org/wiki/Sampling_(signal_processing)).
-
-### MIDI
-
-The "Musical Instrument Digital Interface" — a 1983 standard for sending notes and control data between musical devices. Notes are integers 0–127. *Read more:* [MIDI — Wikipedia](https://en.wikipedia.org/wiki/MIDI), [MIDI 1.0 specification overview](https://midi.org/specs).
-
-### WAV file format
-
-The standard uncompressed audio file format on Windows / Mac / Linux. A short header followed by raw audio samples. *Read more:* [WAV — Wikipedia](https://en.wikipedia.org/wiki/WAV), [WAVE PCM soundfile format — sapp.org](http://soundfile.sapp.org/doc/WaveFormat/).
-
----
-
-## Where to ask if you're still stuck
-
-- **The Rust Book** — the official, free, well-written introduction: <https://doc.rust-lang.org/book/>
-- **Rust by Example** — runnable snippets for almost every feature: <https://doc.rust-lang.org/rust-by-example/>
-- **The Rust Users Forum** — friendly Q&A: <https://users.rust-lang.org/>
-- **r/rust** — busy subreddit: <https://www.reddit.com/r/rust/>
-- **Rust Discord** — live chat (ask in `#beginners`): <https://discord.gg/rust-lang>
-
-Don't be shy about asking. The Rust community is famously welcoming to beginners.
+**Wow Moment** — A named, deliberate moment in every session designed to surprise or delight. Listed explicitly in each session README. The dopamine beat.

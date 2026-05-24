@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" role="img" aria-labelledby="sandFallTitle">
+  <title id="sandFallTitle">An animated sand pixel falling and piling — the Session 3 wow moment</title>
+
+  <defs>
+    <linearGradient id="bgFall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="360" height="200" rx="8" fill="url(#bgFall)" stroke="#2d3748"/>
+
+  <!-- existing sand pile, triangular -->
+  <g fill="#e6c170">
+    <rect x="100" y="172" width="160" height="8"/>
+    <rect x="110" y="164" width="140" height="8"/>
+    <rect x="120" y="156" width="120" height="8"/>
+    <rect x="130" y="148" width="100" height="8"/>
+    <rect x="140" y="140" width="80" height="8"/>
+    <rect x="150" y="132" width="60" height="8"/>
+    <rect x="160" y="124" width="40" height="8"/>
+    <rect x="170" y="116" width="20" height="8"/>
+  </g>
+  <!-- pile highlights -->
+  <g fill="#f0d590">
+    <rect x="140" y="156" width="6" height="2"/>
+    <rect x="180" y="132" width="6" height="2"/>
+    <rect x="200" y="148" width="6" height="2"/>
+  </g>
+
+  <!-- three falling pixels, staggered -->
+  <g fill="#e6c170">
+    <rect x="174" width="8" height="8">
+      <animate attributeName="y" values="0;108" keyTimes="0;1" dur="1.4s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="194" width="8" height="8">
+      <animate attributeName="y" values="-40;124;128" keyTimes="0;0.85;1" dur="1.8s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="156" width="8" height="8">
+      <animate attributeName="y" values="-80;132;140" keyTimes="0;0.85;1" dur="2.2s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- HUD label -->
+  <text x="180" y="28" text-anchor="middle" font-family="Menlo,monospace" font-size="13" font-weight="bold" fill="#f0c674">Session 3 — Sand Piles Itself</text>
+  <text x="180" y="46" text-anchor="middle" font-family="Menlo,monospace" font-size="10" fill="#8b949e">if cell below is empty, move down. Otherwise try diagonal.</text>
+</svg>

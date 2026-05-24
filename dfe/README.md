@@ -71,8 +71,8 @@ This course is designed so that completing it *automatically* satisfies all five
 | `assessor-briefing.md` | Plain-English brief for the assessor. **Print this last; it goes at the front of the binder.** | — (the assessor reads this) |
 | `participant-statement-template.md` | Template for the final personal statement. | **Participant**, after Session 24 |
 | `progress-summary.md` | Pre-built mapping of every session to its evidence. | — (reference only; print and bind for the assessor) |
-| [`../GLOSSARY.md`](../GLOSSARY.md) | Plain-English definitions for every technical term used in the course (compiled, immutable, borrow, GIL, MIDI, …). | — (reference only) |
-| [`../MUSIC-THEORY-PRIMER.md`](../MUSIC-THEORY-PRIMER.md) | Music theory from scratch (notes, scales, MIDI, frequencies) with a labelled piano-keyboard diagram. Read before Session 2 if you're not already a musician. | **Participant** (if needed) |
+| [`../GLOSSARY.md`](../GLOSSARY.md) | Plain-English definitions for every technical term used in the course (compiled, immutable, borrow, cellular automaton, emergent behaviour, …). | — (reference only) |
+| [`../CHEMISTRY-PRIMER.md`](../CHEMISTRY-PRIMER.md) | Chemistry from scratch (combustion, phase change, oxidation) in a 10-minute read. Read before Month 2 if you'd like the reaction names to mean something in real life. | **Participant** (if needed) |
 | [`../resources/compiler-errors.md`](../resources/compiler-errors.md) | The most common Rust compiler errors translated into plain English, with fixes. Linked from every session's "Stuck?" footer. | **Participant** (when stuck) |
 
 ---
@@ -95,7 +95,7 @@ That's it. Each session ends with a small reminder so you don't forget step 2.
 Two things, both small.
 
 1. **Once at the start** (5 minutes): read `assessor-briefing.md` so you understand the setup. The participant will print this and put it at the front of the binder.
-2. **At the end** (about 30–45 minutes): flip through the binder — session log, the three milestone reflections, the three project READMEs, and the participant statement. Sign the form at the bottom of the printed `assessor-briefing.md` and return the binder (or just the signed form) to the participant.
+1. **At the end** (about 30–45 minutes): flip through the binder — session log, the three milestone reflections, the three milestone READMEs (`sand-sim` v0.1, v0.2, v1.0), and the participant statement. Sign the form at the bottom of the printed `assessor-briefing.md` and return the binder (or just the signed form) to the participant.
 
 The assessor does **not** need to know any Rust, **does not need a computer**, and does not need to run any code. The briefing explains exactly what to look for.
 
@@ -119,12 +119,12 @@ After 24 sessions you will have a single A4 ring binder containing:
 
 - **Cover page** with participant name, dates, award level
 - **24 session-log forms**, dated and filled in by hand (or typed and printed)
-- **3 milestone reflection pages** — one after each project
-- **3 printed project READMEs** — `music-theory-cli`, `world-generator`, `midi-synth`
+- **3 milestone reflection pages** — one after each `sand-sim` release (v0.1, v0.2, v1.0)
+- **3 printed milestone READMEs** — one per release
 - **1 participant personal statement** — printed
 - **1 progress summary** — one-page index of the whole course
 - **1 assessor briefing + signed sign-off form** — at the back
 
-Plus, on your laptop and on GitHub: the actual working code for all three projects, ready to demo if the assessor wants to see something running.
+Plus, on your laptop and on GitHub: the actual working code for the three `sand-sim` releases, ready to demo if the assessor wants to see something running.
 
 That's a complete, self-contained evidence pack any DofE coordinator will recognise — and one your assessor can review in a single sitting without ever opening a computer.
