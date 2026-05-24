@@ -1,294 +1,258 @@
-# Session 5: Pattern Matching and `match`
+# Session 5 — Pattern Matching and Multiple Elements
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-## What You'll Learn
-
-How to use `match` — Rust's most powerful control-flow construct. By the end of today you'll have written the function that maps any MIDI note number to its note name, which is a literal building block of the mini-project.
-
-## The Big Idea
-
-`match` is like a `switch` from C or Java, but with three superpowers:
-
-1. **It's an expression** — like `if`, it produces a value.
-2. **It's exhaustive** — the compiler refuses to compile if you've missed a possible case. No more "I forgot to handle that" bugs.
-3. **It's pattern-based** — you can match on shapes, ranges, multiple values, and apply guard conditions, not just equality.
-
-It's the feature that, once you have it, you miss in every other language.
-
-## Concepts Covered
-
-- The `match` expression
-- Exhaustiveness checking
-- Match arms with `=>`
-- The `_` wildcard
-- Multiple patterns with `|`
-- Range patterns: `0..=9`
-- Guards: `n if n > 5`
-- `match` as an expression
-
-## Building Towards `music-theory-cli`
-
-The mini-project takes a root note (`C`, `D#`, `Bb`, etc.) and produces a scale. We need a function that maps a note name to a number, and another that maps a number back to a name. Both are textbook `match` problems.
+> **Stuck on a word?** Things like *pattern*, *arm*, *exhaustive*, *wildcard* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-1/session-05/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-1/session-05/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session your sandbox has **three working elements** with three different physics: **sand** falls and piles, **water** falls *and flows sideways*, **stone** sits still and acts as a wall.
 
-### 1. The simplest `match`
+---
+
+## What you'll learn
+
+- `match` properly — the more powerful, more readable cousin of `if`/`else if`
+- Why **exhaustive matching** is one of Rust's superpowers (the compiler stops you forgetting cases)
+- Range patterns (`1..=3`), match guards (`n if n > 5`), and the `_` wildcard
+- Designing different per-element physics by reusing the same loop shape
+- How to test that a refactor didn't break what worked
+
+---
+
+## The big idea
+
+A sandbox needs at least three element behaviours: **solids that pile** (sand), **liquids that flow** (water), and **static walls** (stone). Three behaviours, all in the same per-cell update step.
+
+`match` is the Rust feature that turns "if it's sand do this; else if it's water do that; else if it's stone do nothing; else ???" into a single statement that the compiler audits for completeness. It's the same idea as a `switch` in C/JavaScript, but Rust forces you to handle every possible value — including the case you forgot existed.
+
+When Session 14 brings in the reactions HashMap, you'll see this taken to its logical conclusion: every interaction in the simulation routed through pattern matching. Today is the practice round.
+
+---
+
+## Concepts covered
+
+- `match` expressions with literal arms
+- The `_` wildcard arm (catch-all)
+- Range patterns: `1..=10` (inclusive), `1..10` (exclusive)
+- Match guards: `n if n > 0`
+- Why match is an *expression* and `if` chains aren't
+- A first taste of element-specific update functions: `update_sand`, `update_water`, `update_stone`
+
+---
+
+## Building towards `sand-sim`
+
+Today is the moment the sandbox stops being "the sand demo." Once water flows and stone holds it back, you can build a dam. A waterfall. A funnel of sand pouring into a stone reservoir. The simulation goes from "physics toy" to "world you can shape." Session 6 polishes the type system; Session 7 wraps a UI around it; Session 8 ships v0.1.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 4 ended with a clean `step` → `update_cell` → `update_sand` shape and a `match cell { SAND => ..., _ => {} }` in `update_cell`. If your `update_cell` is still a chain of `if`s, refactor it to `match` first — today builds straight on top.
+
+### 1. Turn `match` from cosmetic to load-bearing — 4 minutes
+
+Open `update_cell` and add the dispatch for water and stone:
 
 ```rust
-fn main() {
-    let n = 3;
-    let word = match n {
-        1 => "one",
-        2 => "two",
-        3 => "three",
-        _ => "many",
-    };
-    println!("{} → {}", n, word);
+fn update_cell(grid: &mut Vec<Vec<u8>>, row: usize, col: usize) {
+    let cell = grid[row][col];
+
+    match cell {
+        SAND  => update_sand (grid, row, col),
+        WATER => update_water(grid, row, col),
+        STONE => {} // Stone never moves on its own. Match arm intentionally empty.
+        EMPTY => {} // Same for empty cells.
+        _     => {} // Any future element we haven't taught yet.
+    }
 }
 ```
 
-Things to spot:
+Two things to notice. **First**, `STONE => {}` is more honest than no arm at all — it documents that stone has no update logic. **Second**, the `_` wildcard catches anything we haven't named. The compiler doesn't *force* you to spell out `STONE` and `EMPTY` separately (the wildcard would cover them), but writing them out makes the intent obvious.
 
-- Each **arm** has the form `pattern => value,`
-- The **`_`** is the catch-all. Without it (or another arm covering all remaining values) the compiler refuses to compile, because `match` must be exhaustive.
-- The whole `match` is an expression, so we can `let word = match n { ... };`.
+You're using `match` here as a **dispatcher** — a small bit of logic at the top of a function that hands work off to a specialised routine. This is one of the three or four shapes you'll see in *every* substantial Rust codebase.
 
-### 2. Multiple values in one arm
+### 2. Write `update_water` — 8 minutes
 
-```rust
-let in_octave = 6;
-let kind = match in_octave {
-    0 | 2 | 4 | 5 | 7 | 9 | 11 => "white key",
-    1 | 3 | 6 | 8 | 10         => "black key",
-    _                          => "out of range",
-};
-println!("{}", kind);
-```
-
-The `|` (pipe) means "or". This is much cleaner than a long `if`/`else if` chain.
-
-### 3. Range patterns
+Water falls like sand, but if it can't fall it tries to *flow sideways* before giving up:
 
 ```rust
-let velocity = 92;
-let dynamic = match velocity {
-    0..=20    => "ppp (very quiet)",
-    21..=40   => "p (quiet)",
-    41..=70   => "mf (medium)",
-    71..=100  => "f (loud)",
-    101..=127 => "ff (very loud)",
-    _         => "out of MIDI range",
-};
-println!("velocity {} → {}", velocity, dynamic);
+fn update_water(grid: &mut Vec<Vec<u8>>, row: usize, col: usize) {
+    // 1. Try straight down.
+    if row + 1 < ROWS && grid[row + 1][col] == EMPTY {
+        grid[row + 1][col] = WATER;
+        grid[row][col]     = EMPTY;
+        return;
+    }
+
+    // 2. Try diagonally down.
+    let try_left_first = fastrand::bool();
+    let order: [i32; 2] = if try_left_first { [-1, 1] } else { [1, -1] };
+
+    for dx in order {
+        let nc = col as i32 + dx;
+        if nc < 0 || nc >= COLS as i32 { continue; }
+        let nc = nc as usize;
+        if row + 1 < ROWS && grid[row + 1][nc] == EMPTY {
+            grid[row + 1][nc] = WATER;
+            grid[row][col]    = EMPTY;
+            return;
+        }
+    }
+
+    // 3. Try purely sideways — this is what makes water different from sand.
+    for dx in order {
+        let nc = col as i32 + dx;
+        if nc < 0 || nc >= COLS as i32 { continue; }
+        let nc = nc as usize;
+        if grid[row][nc] == EMPTY {
+            grid[row][nc] = WATER;
+            grid[row][col] = EMPTY;
+            return;
+        }
+    }
+}
 ```
 
-Range patterns use **inclusive** ranges (`..=`). You can't use `..` (exclusive) in patterns — that's a separate construct for slices.
+**Save. Run.** Press `2` to select water, drag to draw a pool. Water falls, fills the bottom, and *spreads sideways* until it can't anymore. Place stone (key `3`) to build walls. **You just built a working liquid simulator.**
 
-### 4. Match guards
+**First runnable checkpoint.** This is the most satisfying point of Month 1 so far. Take a screenshot for your DofE log.
+
+> **The Wow Moment.** Build a stone bowl (a U-shape of stone). Pour water into it from above. Watch it settle, fill to the brim, then **overflow** down the sides. *That whole behaviour is three rules: down, diagonal-down, sideways.* You didn't program "fill bowls" or "overflow." It's an emergent property of the rules + 60Hz.
+
+### 3. Why sand doesn't flow sideways — 1 minute
+
+Compare `update_sand` and `update_water`. The *only* difference is that water has a step 3 (the pure-sideways block). That's why sand piles up at an angle and water lies flat. **You expressed a physical law of fluids with five lines of code.**
+
+If you wanted *honey* (very viscous), you'd only run the sideways step 30% of the time. *Mercury* (very flowing) — extra repeated sideways passes. The whole consistency spectrum is just probabilities on the sideways rule.
+
+### 4. Range patterns and guards — `match` in earnest — 5 minutes
+
+Add this helper somewhere in your file. It returns a friendly name for any element:
 
 ```rust
-let temperature = 22;
-let mood = match temperature {
-    t if t < 0   => "freezing",
-    t if t < 15  => "cold",
-    t if t < 25  => "pleasant",
-    _            => "hot",
-};
+fn element_name(cell: u8) -> &'static str {
+    match cell {
+        EMPTY => "empty",
+        SAND  => "sand",
+        WATER => "water",
+        STONE => "stone",
+        n if n >= 100 => "advanced",   // match guard — covers fire, oil, etc later
+        _ => "unknown",
+    }
+}
 ```
 
-A guard is a boolean condition added to an arm with `if`. Useful when the pattern alone can't express what you want.
+Then in your main loop, after computing the label, print it instead of the `if` chain from Session 2:
 
-### 5. The MIDI-to-name function
+```rust
+        let label = element_name(selected);
+        draw_text(label, 8.0, 20.0, 24.0, WHITE);
+```
 
-The 12 semitones in an octave have names:
+What you just used:
 
-| `note % 12` | Name |
+- `EMPTY => "empty",` — **literal arm**. Matches exactly that value.
+- `n if n >= 100 => "advanced",` — **named arm with a guard**. The `n` binds the matched value to a name; the `if` runs only on the matched arm. Guards open up arbitrarily complex conditions.
+- `_ => "unknown",` — **wildcard arm**. Must come last (Rust matches in order).
+
+You could also use a range:
+
+```rust
+match midi_note % 12 {
+    0      => "C",
+    1 | 3  => "C# or D#",         // or-pattern
+    4..=6  => "E or F or F#",     // inclusive range
+    _      => "other",
+}
+```
+
+Or-patterns (`|`) and ranges (`..=`) are surprisingly handy once you spot the use cases.
+
+### 5. (Optional) `&'static str` — what's that quote? — 2 minutes
+
+In the `element_name` signature you have `-> &'static str`. The `'static` is a **lifetime**. It says "the returned string lives for the entire program" — which is true, because string literals like `"sand"` are baked into the compiled binary. We'll cover lifetimes properly when they get interesting (Month 3). For now: any function that returns a string literal needs `&'static str`.
+
+---
+
+## Common mistakes
+
+### `error[E0004]: non-exhaustive patterns: '_' not covered`
+
+`match` on a `u8` must handle every value 0–255. You spelled out `SAND`, `WATER`, `STONE`, `EMPTY` and forgot `_`. Add `_ => {}` at the bottom.
+
+### `error[E0308]: 'match' arms have incompatible types`
+
+You wrote `match` to return a value, but one arm returns `&str` and another returns `String`. Every arm must produce the same type. Fix: convert with `.to_string()`, or change the function signature to `String` and call `.to_string()` on the literals.
+
+### Water still acts like sand
+
+You forgot to add the `update_water` branch to the `match` in `update_cell`. The compiler doesn't warn you here — there's already a default `_ => {}` catching water — so the symptom is silent: water just sits there. Add `WATER => update_water(grid, row, col)`.
+
+### Water "teleports" sideways across the whole row in one frame
+
+Same issue as Session 3's sand-teleporting bug, but lateral: water moves right, the inner `for col in 0..COLS` visits the moved-right water again *this frame*, and it moves again. Cleanest fix: **alternate column iteration direction each frame.** Add a frame counter:
+
+```rust
+let mut frame: u64 = 0;
+loop {
+    frame += 1;
+    // ...
+    step(&mut grid, frame);
+}
+
+fn step(grid: &mut Vec<Vec<u8>>, frame: u64) {
+    for row in (0..ROWS - 1).rev() {
+        if frame % 2 == 0 {
+            for col in 0..COLS { update_cell(grid, row, col); }
+        } else {
+            for col in (0..COLS).rev() { update_cell(grid, row, col); }
+        }
+    }
+}
+```
+
+The bias cancels itself out frame by frame. (Session 7 polishes this further.)
+
+### Stone vanishes when you click it
+
+*(Linux note continues after Common mistakes.)*
+
+You probably forgot to update the keypress block for `Key3 => selected = STONE`. Or — fun bug — your `cell_colour` function still has the `STONE` arm pointing at `BLACK`. Stone is *drawn* as background colour, so you think it disappeared. Check `cell_colour`.
+
+---
+
+## Session challenge
+
+Pick one — no solution provided.
+
+1. **Sand on water sinks.** Currently sand placed in water just sits on top because `update_sand` only moves into `EMPTY`. Add a rule: if the cell below is `WATER`, swap the two (sand goes down, water comes up). Hint: introduces a `swap_cells` helper.
+2. **Floating debris.** Add a fourth element, "wood" (`const WOOD: u8 = 4;`, brown), which floats *up* through water and sits on top. `update_wood`: if cell below is WATER, swap up.
+3. **Water evaporates at the top row.** Every few frames, if row 0 contains water, set it to EMPTY. Watch the water "level" slowly drop in a sealed container. (Real evaporation, in two lines.)
+4. **A toggle for water turbulence.** Press `T` to switch a global `mut turbulent: bool`. When true, increase the probability of sideways spread to 1.0 *and* let water also flow against gravity diagonally upward 5% of the time. (Looks awful. Also weirdly mesmerising.)
+
+---
+
+## Quick reference
+
+| What | Code |
 |---|---|
-| 0 | C |
-| 1 | C# |
-| 2 | D |
-| 3 | D# |
-| 4 | E |
-| 5 | F |
-| 6 | F# |
-| 7 | G |
-| 8 | G# |
-| 9 | A |
-| 10 | A# |
-| 11 | B |
-
-In Rust:
-
-```rust
-fn note_name(midi: u8) -> &'static str {
-    match midi % 12 {
-        0  => "C",
-        1  => "C#",
-        2  => "D",
-        3  => "D#",
-        4  => "E",
-        5  => "F",
-        6  => "F#",
-        7  => "G",
-        8  => "G#",
-        9  => "A",
-        10 => "A#",
-        11 => "B",
-        _  => unreachable!(),   // u8 % 12 is always 0..=11
-    }
-}
-```
-
-> **Why the `_`?** `match` is exhaustive over the *type* of the matched value. `u8 % 12` is always 0..=11 mathematically — but the compiler only knows it's a `u8` (range 0..=255). So we add `_ => unreachable!()` to satisfy exhaustiveness. `unreachable!()` is a macro that panics if it ever runs — perfect for "this should never happen".
-
-### 6. Adding the octave number
-
-MIDI note numbering puts middle C (`C4`) at 60. Each octave is 12 numbers. So the octave for MIDI note `n` is `(n / 12) - 1`. Putting it together:
-
-```rust
-fn full_note_name(midi: u8) -> String {
-    let name = note_name(midi);
-    let octave = (midi as i32 / 12) - 1;
-    format!("{}{}", name, octave)
-}
-
-fn main() {
-    for midi in [21u8, 60, 69, 108] {
-        println!("MIDI {:>3} = {}", midi, full_note_name(midi));
-    }
-}
-```
-
-Output:
-
-```
-MIDI  21 = A0
-MIDI  60 = C4
-MIDI  69 = A4
-MIDI 108 = C8
-```
-
-Lowest note on a piano (A0), middle C (C4), concert pitch (A4), highest note on a piano (C8). All correct.
-
-The complete example is in `examples/midi_note_names/`.
+| Match a value | `match cell { SAND => ..., _ => ... }` |
+| Wildcard arm | `_ => { /* handle anything else */ }` |
+| Or-pattern | `1 \| 2 \| 3 => ...` |
+| Inclusive range | `0..=9 => "single digit"` |
+| Exclusive range | `0..10 => "single digit"` |
+| Match guard | `n if n > 0 => "positive"` |
+| Bind matched value | `n @ 0..=9 => println!("got {n}")` |
+| Static string return | `fn name() -> &'static str { "hi" }` |
+| Empty arm (do nothing) | `STONE => {}` |
 
 ---
 
-## Common Mistakes
+## DofE log reminder
 
-### ❌ Forgetting the catch-all on a non-exhaustive type
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 5**. Worth recording:
 
-```rust
-let n: u32 = 5;
-let s = match n {
-    1 => "one",
-    2 => "two",
-};   // 💥
-```
-
-```
-error[E0004]: non-exhaustive patterns: `0_u32`, `3_u32..=u32::MAX` not covered
-```
-
-**Fix:** add `_ => "other"`.
-
-### ❌ Using `..` instead of `..=` in a range pattern
-
-```rust
-match n {
-    0..10 => ...,   // 💥
-}
-```
-
-**Fix:** `0..=10`. (As of Rust 1.80, `..` exclusive ranges in patterns are stable too — but `..=` has been supported since the beginning and is what you'll see in most code.)
-
-### ❌ Falling through (you can't)
-
-```rust
-match n {
-    1 => println!("one"),
-    2 | 3 => {            // ✅ this is correct: matches 2 or 3
-        println!("two or three");
-    }
-    _ => {}
-}
-```
-
-There's no fall-through like in C. If you want one arm to handle multiple values, list them with `|`.
-
-### ❌ Comma after the catch-all is *required*
-
-```rust
-match n {
-    1 => "one",
-    _ => "other"
-}   // 💥 missing comma somewhere — can be confusing
-```
-
-Trailing commas are optional after `}`-bodied arms but required after `value,`-style arms. When in doubt, add one.
-
----
-
-## Session Challenge
-
-Write a function `parse_note_name(name: &str) -> Option<u8>` that returns the MIDI note number for a given input like `"C4"`, `"A4"`, `"F#5"`, `"Bb3"`. Use `match` extensively. Bonus: support both `#` and `b` (flat) notation. (`Bb3` should return the same value as `A#3`.)
-
-> Hint: split the input into a "letter part" and a "number part". You don't know `Option` properly yet — Session 10 covers it — so for now, you can return 255 for invalid input and accept that's a hack.
-
----
-
-## Quick Reference
-
-| Concept | Syntax |
-|---|---|
-| Basic `match` | `match v { p => e, _ => default }` |
-| Multiple patterns | `1 \| 2 \| 3 => ...` |
-| Range pattern | `0..=9 => ...` |
-| Guard | `n if n > 5 => ...` |
-| Catch-all | `_ => ...` |
-| Match as expression | `let x = match ...;` |
-| "Should never happen" | `_ => unreachable!()` |
-
----
-
-## Further Reading
-
-Curated extra material on the topics covered in this session (Pattern matching and `match`). All free; all current as of writing.
-
-- [**The Rust Book** — *The `match` Control Flow Construct* (6.2)](https://doc.rust-lang.org/book/ch06-02-match.html) — The whole story, with the famous Option example.
-- [**The Rust Book** — *Patterns and Matching* (chapter 18)](https://doc.rust-lang.org/book/ch18-00-patterns.html) — Everywhere patterns appear in Rust — `let`, function args, `if let`, `while let`. Read this once and you'll see them everywhere.
-- [**Rust by Example** — *match*](https://doc.rust-lang.org/rust-by-example/flow_control/match.html) — Bite-sized variants, including ranges and guards.
-- [**The Rust Reference** — *Pattern syntax*](https://doc.rust-lang.org/reference/patterns.html) — The exhaustive grammar. Reach for this when something unusual works (or refuses to).
-
----
-
-## Stuck?
-
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
-
----
-## DofE Log Reminder
-
-> 📝 Session 5 done. `match` is one of the most loved features of Rust — was it intuitive? What did you build with it? Five minutes in [`dfe/session-log.md`](../../dfe/session-log.md).
+- What "exhaustive matching" means and why it caught a bug for you (or stopped a bug from being possible)
+- The moment water first overflowed your stone bowl — that's a real emergent-behaviour story to put in your participant statement later

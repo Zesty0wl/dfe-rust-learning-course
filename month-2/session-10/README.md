@@ -1,34 +1,30 @@
-# Session 10: Enums with Data and `Option<T>`
+# Session 10 — Enums with Data and `Option`: Modelling Reactions
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
+> **Stuck on a word?** Things like *variant*, *payload*, *null*, *Option*, *Some*, *None* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
-## What You'll Learn
+---
 
-How to create enums where each variant carries different data — Rust's killer feature for modelling things that can be one of several distinct shapes. And then `Option<T>`, which is how Rust handles "maybe there's a value, maybe not" without ever using `null`.
+## The Goal
 
-## The Big Idea
+By the end of this session your sandbox has **wood**, and **wood next to fire ignites** — your first formal *reaction*. The reaction is expressed as a function `react(a, b) -> Option<ReactionOutcome>`, the same shape that Session 14 lifts into a HashMap.
 
-In Session 6 you saw simple enums:
+---
 
-```rust
-enum Note { C, D, E, F, G, A, B }
-```
+## What you'll learn
 
-That's powerful, but Rust enums can do much more — each variant can carry **different data of different shapes**. This makes them a way to say "this value is exactly one of these, with this exact data attached":
+- **Enum variants with data**: `CellType::Wood(u8)` — variants that *carry* a value
+- **`Option<T>`** — Rust's replacement for `null`, and why it's a billion-dollar improvement
+- `Some(...)` and `None` constructors
+- Pattern-matching on `Option` and unwrapping safely
+- Returning `Option` to mean "maybe this happens, maybe nothing does"
 
-```rust
-enum Tile {
-    Ocean { depth: u8 },
-    Plains,
-    Forest { density: u8 },
-    Mountain { height: u16 },
-    Desert,
-}
-```
+---
 
-A single `Tile` value is one of those five things. If it's an `Ocean`, the depth is *part of the type*; the compiler guarantees you can't access depth on a Plains tile, because Plains doesn't have one. Try it and the program won't compile. This is a class of bug — accessing fields that don't exist — that Rust eliminates entirely.
+## The big idea
 
-Then there's `Option<T>`. In most languages, "no value here" is `null` / `None` / `nil`, and you find out it was missing by crashing at runtime. Rust doesn't have null. Instead it has:
+In most languages, "no value" is `null` / `nil` / `None` / `undefined` — and the system silently lets you treat it as if it were a real value, until it explodes at runtime. Tony Hoare, who invented null, called it his "billion-dollar mistake."
+
+Rust has no `null`. Instead, anything that *might* be absent has the type `Option<T>`, which is just an enum:
 
 ```rust
 enum Option<T> {
@@ -37,208 +33,300 @@ enum Option<T> {
 }
 ```
 
-A function that *might* return a value returns `Option<T>`. The caller is forced by the compiler to handle both `Some` and `None`. The famous "billion-dollar mistake" (Tony Hoare's words about inventing null) — Rust just sidesteps it.
+To use the inner `T`, you have to handle both arms. The compiler refuses to let you forget. **Every null-pointer bug in your future career — gone, by construction.**
 
-## Concepts Covered
-
-- Enum variants with **named fields** (struct-like) and **tuple data**
-- `match` on enum variants, destructuring the inner data
-- `Option<T>`, `Some(value)`, `None`
-- `.unwrap()`, `.unwrap_or(default)`, `.is_some()`, `.is_none()`
-- Pattern matching as the canonical way to use `Option`
-- Why Rust doesn't have `null`
-
-## Building Towards `world-generator`
-
-The world is going to be a `Vec<Vec<Tile>>` and `Tile` will be exactly the enum above. Plus, "find the first mountain in the world" returns `Option<(usize, usize)>` — `Some((x, y))` if we find one, `None` if the world has no mountains.
+Today you also meet **variants that carry data**. `CellType::Wood(u8)` means "a wood cell, plus an extra byte" — for now, that byte is the wood's *charring level* (0 = pristine, 100 = ash). Variants-with-data are how Rust replaces inheritance: instead of a `Wood` *class* that extends `Cell`, you have a `Wood(u8)` *variant* that contains its own data inline.
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-2/session-10/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-2/session-10/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## Concepts covered
 
-## Step-by-Step Walkthrough
+- `enum CellType { ..., Wood(u8), Fire }`
+- `Option<T>` and its two variants
+- `match Some(x) => ... None => ...`
+- `if let Some(x) = opt { ... }` shorthand
+- `Option::unwrap()`, `Option::unwrap_or(default)` — and when each is appropriate
+- A `ReactionOutcome` struct: what changes when a reaction fires
 
-### 1. The `Tile` enum
+---
 
-`examples/tile_enum/src/main.rs`:
+## Building towards `sand-sim`
+
+The signature `fn react(a: CellType, b: CellType) -> Option<ReactionOutcome>` is the seam every later element plugs into. Session 11 calls it from the per-cell update to spread fire. Session 14 collapses dozens of `if`/`match` arms into a single HashMap keyed on `(a, b)` that returns the same `Option<ReactionOutcome>`. Today you write the first reaction (wood + fire) the long way; later sessions just add rows to the table.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 9 finished. Your grid is `Vec<Vec<Cell>>`, each `Cell` has `cell_type: CellType` and `temperature: f32`, and pressing `H` drops in cells at 200°C.
+
+### 1. Two new variants in `CellType` — 2 minutes
+
+Open the enum and add:
 
 ```rust
-#[derive(Debug)]
-enum Tile {
-    Ocean { depth: u8 },
-    Plains,
-    Forest { density: u8 },
-    Mountain { height: u16 },
-    Desert,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum CellType {
+    Empty,
+    Sand,
+    Water,
+    Stone,
+    Wood,        // for today: pristine, no data yet
+    Fire,        // pure ignition source
 }
 ```
 
-Variants come in three shapes:
-- **Unit** like `Plains` and `Desert` — no data
-- **Struct-like** like `Ocean { depth: u8 }` — named fields
-- **Tuple-like** like `Mountain(u16)` — anonymous fields, accessed by `.0`, `.1`, etc.
+(We'll add the `(u8)` charring payload later in the session.)
 
-We're using struct-like throughout because the field names make code more readable.
-
-### 2. Make some tiles
+`cargo check`. Every match without a wildcard will complain about `Wood` and `Fire` being uncovered. Fix `cell_colour` / `CellType::colour`:
 
 ```rust
-let a = Tile::Ocean { depth: 12 };
-let b = Tile::Plains;
-let c = Tile::Mountain { height: 1500 };
+CellType::Wood  => Color::new(0.45, 0.30, 0.15, 1.0),  // chocolate brown
+CellType::Fire  => Color::new(1.00, 0.45, 0.10, 1.0),  // bright orange
 ```
 
-Note `Tile::` prefix when constructing — same as `Block::new` in Session 9. Variants live "inside" the enum's namespace.
-
-### 3. Match and destructure
+And add to your selector array in `draw_selector`:
 
 ```rust
-fn describe(t: &Tile) -> String {
-    match t {
-        Tile::Ocean { depth }    => format!("Ocean ({}m deep)", depth),
-        Tile::Plains             => String::from("Grassy plains"),
-        Tile::Forest { density } => format!("Forest ({}% trees)", density),
-        Tile::Mountain { height }=> format!("Mountain ({}m tall)", height),
-        Tile::Desert             => String::from("Hot, sandy desert"),
+let elements = [CellType::Sand, CellType::Water, CellType::Stone, CellType::Wood, CellType::Fire];
+```
+
+Bind keys `4` and `5` in the input block:
+
+```rust
+        if is_key_pressed(KeyCode::Key4) { selected = CellType::Wood; }
+        if is_key_pressed(KeyCode::Key5) { selected = CellType::Fire; }
+```
+
+`cargo run`. Wood paints brown, fire paints orange. Neither does anything yet.
+
+### 2. The reaction signature — 3 minutes
+
+Add this above the per-element update functions:
+
+```rust
+#[derive(Debug, Clone, Copy)]
+struct ReactionOutcome {
+    /// What the *source* cell becomes (the one running the rule).
+    new_source: CellType,
+    /// What the *target* (neighbour) cell becomes.
+    new_target: CellType,
+    /// How much heat to release at the reaction site.
+    heat: f32,
+}
+
+/// Given two adjacent cell types, return what they should become.
+/// `None` means "no reaction; leave them alone."
+fn react(source: CellType, target: CellType) -> Option<ReactionOutcome> {
+    match (source, target) {
+        // Fire eats wood. Both ends become fire; lots of heat.
+        (CellType::Fire, CellType::Wood) | (CellType::Wood, CellType::Fire) => Some(ReactionOutcome {
+            new_source: CellType::Fire,
+            new_target: CellType::Fire,
+            heat: 80.0,
+        }),
+        _ => None,
     }
 }
 ```
 
-`{ depth }` inside `match` is **pattern-matching with destructuring**. It pulls the `depth` field out of the variant and binds it to a local variable. If the field name in the pattern matches the field name in the variant definition, you don't need to write `depth: depth`.
+A few things to notice:
 
-### 4. The compiler forces you to be exhaustive
+- **The return type is `Option<ReactionOutcome>`**, not `ReactionOutcome`. Most cell pairs don't react. Returning `None` for the common case is *the* idiomatic Rust pattern.
+- **The match has a tuple pattern.** `match (source, target)` destructures both at once. The `|` is the "or" pattern — `(Fire, Wood) | (Wood, Fire)` means either order works.
+- **The wildcard arm returns `None`.** Without it, the compiler would demand you spell out every possible pair (5 × 5 = 25, growing).
 
-Comment out the `Tile::Desert` arm and try to compile:
+### 3. Call `react` from the per-cell update — 5 minutes
 
-```text
-error[E0004]: non-exhaustive patterns: `&Tile::Desert` not covered
-```
-
-The compiler will not let you ship code that doesn't handle every possible variant. You can't *forget* a case. (You can use `_ =>` as a catch-all, but then it's a deliberate choice.)
-
-### 5. Now `Option<T>` — the search function
-
-Imagine a tiny world (just a `Vec<Vec<Tile>>` for now) and you want to find the first mountain:
+In `update_cell` (or wherever you dispatch per-cell logic), add a reaction step that runs *before* movement:
 
 ```rust
-fn find_mountain(world: &Vec<Vec<Tile>>) -> Option<(usize, usize)> {
-    for (y, row) in world.iter().enumerate() {
-        for (x, tile) in row.iter().enumerate() {
-            if let Tile::Mountain { .. } = tile {
-                return Some((x, y));
-            }
+fn try_react(grid: &mut Vec<Vec<Cell>>, row: usize, col: usize) {
+    let source = grid[row][col].cell_type;
+    if matches!(source, CellType::Empty) { return; }
+
+    // Try all four cardinal neighbours.
+    let neighbours = [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)];
+    for (dr, dc) in neighbours {
+        let nr = row as i32 + dr;
+        let nc = col as i32 + dc;
+        if nr < 0 || nr >= ROWS as i32 || nc < 0 || nc >= COLS as i32 { continue; }
+        let (nr, nc) = (nr as usize, nc as usize);
+
+        let target = grid[nr][nc].cell_type;
+        if let Some(outcome) = react(source, target) {
+            grid[row][col].cell_type    = outcome.new_source;
+            grid[nr][nc].cell_type      = outcome.new_target;
+            grid[row][col].heat(outcome.heat);
+            grid[nr][nc].heat(outcome.heat);
+            return;          // one reaction per cell per frame
         }
     }
-    None
 }
 ```
 
-Two new bits:
-
-- **`Option<(usize, usize)>` as the return type.** "Maybe a coordinate pair, maybe nothing."
-- **`if let Tile::Mountain { .. } = tile`** — a shorthand for `match` when you only care about *one* variant. The `..` means "any fields, don't care".
-
-### 6. Using the result
+Watch the new syntax: **`if let Some(outcome) = react(source, target)`**. This is the most common way to use `Option`. It's exactly the `match` pattern in one line:
 
 ```rust
-match find_mountain(&world) {
-    Some((x, y)) => println!("Mountain at ({}, {})!", x, y),
-    None         => println!("No mountains in this world."),
+match react(source, target) {
+    Some(outcome) => { /* use outcome */ }
+    None => {}      // do nothing
 }
 ```
 
-You **cannot** accidentally use the coordinates as if they were always there. The compiler insists you handle the `None` case.
+When you only care about the `Some` case, `if let` is much cleaner.
 
-If you're 100% sure the value is `Some` (or you're prototyping), `.unwrap()` exists:
+Wire it into the per-frame step:
 
 ```rust
-let (x, y) = find_mountain(&world).unwrap();   // panics if None
+fn step(grid: &mut Vec<Vec<Cell>>) {
+    // 1. Reactions pass.
+    for row in 0..ROWS {
+        for col in 0..COLS {
+            try_react(grid, row, col);
+        }
+    }
+    // 2. Movement pass (Session 3–7 logic).
+    for row in (0..ROWS - 1).rev() {
+        for col in 0..COLS {
+            update_cell(grid, row, col);
+        }
+    }
+}
 ```
 
-But `.unwrap()` is a code smell in production — it's how you crash. Prefer `.unwrap_or(default)` for a sensible fallback, or proper `match`.
+The order matters: reactions first, then movement. Otherwise a falling sand grain might land next to wood mid-frame and not get a chance to react until the next frame.
 
----
+**Save. Run.** Build a stack of wood (key `4`). Drop a single fire cell (key `5`) at the top. **It spreads.** Slowly, because fire only spreads to direct neighbours per frame — but it spreads.
 
-## Common Mistakes
+> **The Wow Moment.** Build a long horizontal beam of wood and put a single fire dot on the leftmost cell. Watch the fire ripple along the beam, one cell per frame, until the whole beam is burning. **You wrote a chemical reaction.** The two-line `react` function is the entire rule. Real chemistry simulations use the same shape, scaled up: a function that takes the participants and returns what they become.
 
-- **Comparing enum variants with `==`** — only works if you `#[derive(PartialEq)]`. Otherwise use `match` or `if let`.
-- **Trying to access fields without destructuring** — `tile.depth` doesn't compile, because the compiler can't prove this `tile` *has* a depth. You have to `match` it.
-- **Calling `.unwrap()` everywhere** — works until it doesn't. The whole point of `Option` is to *handle* the None case. Use `match` or `.unwrap_or(...)`.
-- **Forgetting `Tile::` prefix** — `Ocean { depth: 12 }` alone won't compile; needs to be `Tile::Ocean { depth: 12 }`.
+### 4. Variants with data: pristine vs charring wood — 5 minutes
 
----
-
-## Session Challenge
-
-Add a method `is_passable(&self) -> bool` to `Tile` (returns `true` for everything except `Mountain` with `height > 1000` and `Ocean` with `depth > 5`).
-
-Then write a function `safest_route_start(world: &Vec<Vec<Tile>>) -> Option<(usize, usize)>` that returns the coordinates of the first **passable** tile in the world. Return `None` if nothing is passable.
-
-Bonus: add `Tile::River { width: u8 }`. Watch the compiler tell you exactly which `match` blocks need updating.
-
----
-
-## Quick Reference
+Right now wood ignites instantly on contact. Let's make it take a few ticks. Change the variant:
 
 ```rust
-enum Shape {
-    Circle { radius: f64 },
-    Square(f64),                // tuple-like; access with .0
-    Point,
+enum CellType {
+    // ...
+    Wood(u8),        // u8 = char level, 0 = pristine, 100 = ash
+    // ...
 }
-
-let s = Shape::Circle { radius: 1.5 };
-
-let area = match s {
-    Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
-    Shape::Square(side)      => side * side,
-    Shape::Point             => 0.0,
-};
-
-// Option
-fn first_letter(s: &str) -> Option<char> {
-    s.chars().next()
-}
-
-if let Some(c) = first_letter("hi") {
-    println!("First char: {}", c);
-}
-
-let x = first_letter("").unwrap_or('?');     // '?' because string is empty
 ```
 
+`cargo check` rains errors — match arms must cover the new shape. Update them:
+
+```rust
+// In CellType::colour:
+CellType::Wood(char_level) => {
+    let darken = char_level as f32 / 100.0;
+    Color::new(
+        0.45 * (1.0 - darken),
+        0.30 * (1.0 - darken),
+        0.15 * (1.0 - darken),
+        1.0,
+    )
+}
+
+// In paint sites / selector array:
+CellType::Wood(0)        // pristine wood
+
+// In react:
+(CellType::Fire, CellType::Wood(c)) | (CellType::Wood(c), CellType::Fire) => {
+    if c >= 80 {
+        // Fully charred — turn to fire.
+        Some(ReactionOutcome { new_source: CellType::Fire, new_target: CellType::Fire, heat: 80.0 })
+    } else {
+        // Still charring — increment the char level.
+        Some(ReactionOutcome { new_source: CellType::Fire, new_target: CellType::Wood(c + 20), heat: 20.0 })
+    }
+}
+```
+
+Note `CellType::Wood(c)` in the pattern — `c` binds the inner `u8` so you can use it. Same as destructuring a struct.
+
+Run it. Now fire takes a few ticks to fully consume each wood cell. The wood visibly darkens. **You modelled charring with one extra byte per variant.**
+
+### 5. `unwrap` vs `unwrap_or` vs `?` — 3 minutes
+
+You'll see all three of these everywhere in Rust code. Here's the etiquette:
+
+- **`opt.unwrap()`** — "I know this is `Some`. If it's `None`, panic." Use only when you can *prove* the value is present.
+- **`opt.unwrap_or(default)`** — "Give me the inner value, or this default if it's `None`." Always safe.
+- **`opt?`** — Early-returns `None` from the enclosing function if the value is `None`. Lands properly in Session 18 with `Result`.
+
+Avoid `unwrap()` unless you have a comment justifying why the value is guaranteed. In real codebases, every `unwrap` is a small signed promise: *"I'm sure this never fails."*
+
 ---
 
-## Further Reading
+## Linux (Ubuntu) note
 
-Curated extra material on the topics covered in this session (Enums with data and `Option<T>`). All free; all current as of writing.
+Nothing OS-specific in this session — `Option`, enum payloads, and reactions are pure Rust. Two practical Ubuntu notes:
 
-- [**The Rust Book** — *Enums and Pattern Matching* (chapter 6)](https://doc.rust-lang.org/book/ch06-00-enums.html) — Re-read with fresh eyes now that you've seen them in action.
-- [**`Option<T>` documentation**](https://doc.rust-lang.org/std/option/) — Skim every method. `map`, `and_then`, `unwrap_or`, `ok_or` — all the glue you'll use forever.
-- [**Null References: The Billion Dollar Mistake** — Tony Hoare (talk)](https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/) — The man who invented `null` apologising for it. Explains why `Option<T>` matters.
+- **Compile times are now noticeably longer** (3–8 seconds for `cargo check`, 10–20 seconds for first `cargo run` after changing the enum). The cause is the cascade of error-fix-error-fix that the enum payload change triggers. This is normal. The fix isn't to make the compiler faster; it's to lean on `cargo check` (skips codegen and linking).
+- If `rust-analyzer` in VS Code shows phantom errors after the `Wood(u8)` rename — squiggles on lines that compile fine — `Ctrl+Shift+P` → *"Rust Analyzer: Restart Server"*. Common Ubuntu hiccup, harmless.
+
+---
+
+## Common mistakes
+
+### `error[E0023]: this pattern has 1 field, but the corresponding tuple variant has 0 fields`
+
+You wrote `CellType::Wood(c)` in a match arm but didn't update the variant to `Wood(u8)`. Or the opposite: variant has `(u8)` but a match arm has bare `CellType::Wood`. Spell out the data even if you ignore it: `CellType::Wood(_) => ...`.
+
+### `Option<ReactionOutcome>` won't return from `react` — `expected ReactionOutcome, found Option<...>`
+
+You forgot to wrap the return value in `Some(...)`. The function returns `Option<ReactionOutcome>`, so the only valid returns are `Some(outcome)` or `None`.
+
+### Fire spreads in only one direction
+
+Your neighbour loop `[(-1, 0), (1, 0), (0, -1), (0, 1)]` is missing one of the four pairs. Each pair is `(dr, dc)` — row delta, column delta. Verify all four cardinals are present.
+
+### Fire consumes all wood in one frame
+
+You forgot the `return` at the end of `try_react`'s `if let Some(...)` block. Without it, after igniting one neighbour, the loop keeps going and ignites the others too. One reaction per cell per frame is the rule.
+
+### `cargo run` panics with "called `Option::unwrap()` on a `None`"
+
+You used `unwrap()` somewhere it wasn't safe — common with `react(...).unwrap()`. Replace with `if let Some(outcome) = react(...)` to handle the `None` case cleanly.
+
+### Wood doesn't visibly darken
+
+The `colour` method recomputes per frame, but you forgot to pass the `char_level` field through. Check `CellType::Wood(char_level) => ...` actually uses `char_level` in the colour formula.
 
 ---
 
-## Stuck?
+## Session challenge
 
-You're not the first. Three places that work when you're properly stuck:
+Pick one, no solution provided.
 
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+1. **Water extinguishes fire.** Add `(CellType::Fire, CellType::Water) | (CellType::Water, CellType::Fire) => Some(ReactionOutcome { new_source: CellType::Empty, new_target: CellType::Water, heat: -50.0 })`. Now fire dies on contact with water. (Bonus: turn the water into steam — Session 13 territory.)
+2. **A `match` on `Option<ReactionOutcome>` with both arms.** Rewrite the `if let` block in `try_react` as an explicit `match`. Notice both forms compile to the same thing; pick which reads better to you.
+3. **A reaction that requires a third cell.** "Fire next to wood next to wood" — only ignite if there are at least *two* wood neighbours, modelling that lone wood embers go out. (Compute a count first, then call `react` only above threshold.)
+4. **`react` returning a `Vec<ReactionOutcome>`.** Refactor so a single call can return multiple state changes (e.g. heat-up the four other neighbours in addition to the reacted cells). Forward-compatible with explosions in Session 21.
 
 ---
-## DofE Log Reminder
 
-Row 10 of [`session-log.md`](../../dfe/session-log.md). Don't break the chain.
+## Quick reference
+
+| What | Code |
+|---|---|
+| Variant with data | `enum E { Wood(u8) }` |
+| Make one | `CellType::Wood(0)` |
+| Pattern with binding | `CellType::Wood(c) => println!("{c}")` |
+| Pattern ignoring data | `CellType::Wood(_) => ...` |
+| `Option<T>` | `Option<ReactionOutcome>` |
+| Build | `Some(value)` / `None` |
+| Match an option | `match opt { Some(x) => ..., None => ... }` |
+| Shorthand | `if let Some(x) = opt { ... }` |
+| Default fallback | `opt.unwrap_or(default)` |
+| Tuple match | `match (a, b) { (X, Y) => ... }` |
+| Or-pattern | `(X, Y) \| (Y, X) => ...` |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 10**. Worth recording:
+
+- Your one-sentence explanation of why `Option<T>` is "better than null" — assessors love this one
+- A short clip / screenshot of fire eating a wood beam end-to-end (the wow moment)

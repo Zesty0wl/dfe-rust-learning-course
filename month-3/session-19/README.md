@@ -1,282 +1,353 @@
-# Session 19: Closures and Iterators (Deep Dive)
+# Session 19 — The Recipe System: Unlocking Elements
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-## What You'll Learn
-
-You met closures and iterators in Session 12. Today you go *below the surface*: the three closure traits (`Fn`, `FnMut`, `FnOnce`), the `move` keyword, more iterator adaptors (`zip`, `chain`, `flat_map`, `take`, `skip`), and the holy grail — **writing your own iterator**.
-
-The session output: an infinite oscillator iterator that produces audio samples for a chosen waveform. Drop a `.take(sample_rate)` on it and you have one second of audio. This is *literally* a building block of the final project.
-
-## The Big Idea
-
-In Session 12 you used closures casually: `|x| x + 1`. But closures are richer than they look — every closure secretly implements one (or more) of three traits, depending on what it does with its captured variables:
-
-- **`FnOnce`** — can be called *at most once*. It might consume (move) its captured variables.
-- **`FnMut`** — can be called many times, and may mutate captured variables.
-- **`Fn`** — can be called many times, only reads captured variables.
-
-`Fn ⊆ FnMut ⊆ FnOnce` — a `Fn` closure is also a `FnMut` and `FnOnce`. The compiler picks the most permissive trait it can.
-
-You usually don't think about this until you write a function that *takes* a closure as a parameter and have to choose `impl Fn(...)`, `impl FnMut(...)`, or `impl FnOnce(...)`.
-
-The `move` keyword forces a closure to **take ownership** of the variables it captures, instead of borrowing them. Essential for closures that outlive their surrounding scope (e.g., closures sent to another thread, or returned from a function).
-
-## Concepts Covered
-
-- The three closure traits and when to use which
-- `move ||` closures
-- More iterator adaptors: `.zip()`, `.flat_map()`, `.chain()`, `.take()`, `.skip()`, `.cycle()`, `.step_by()`
-- Lazy evaluation — adaptors do nothing until consumed
-- `Iterator::collect()` into many types: `Vec`, `String`, `HashMap`, `Result<Vec<_>, _>`
-- Implementing `Iterator` for your own struct
-
-## Building Towards `midi-synth`
-
-Today's deliverable, `Oscillator`, is the engine you'll bolt into Session 21. Same code, virtually unchanged. You're literally writing the synth one piece at a time.
+> **Stuck on a word?** Things like *closure*, *recipe*, *discovery*, *predicate*, *higher-order function* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-3/session-19/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-3/session-19/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session the element selector **starts with only four elements unlocked** (sand, water, stone, wood) and **the rest are earned by experimentation** — get water near acid for the first time and "diluted acid" becomes available; touch fire to sand and "glass" appears. Saved across sessions, persistently.
 
-### 1. The closure traits, illustrated
+---
+
+## What you'll learn
+
+- **Closures** — anonymous functions with environment capture
+- `Fn`, `FnMut`, `FnOnce` — the three traits all closures implement
+- The `move` keyword — taking ownership instead of borrowing
+- Storing closures in a `Vec` for table-driven *predicates*
+- The "recipe" pattern: a closure that returns `true` when an unlock condition is met
+
+---
+
+## The big idea
+
+A **recipe** is "a check that, when true, unlocks something." Today, recipes are checks on the *grid state*. "Was acid ever adjacent to water?" "Did fire ever touch sand?"
+
+The natural Rust shape is a `Vec` of closures: each closure takes the grid and returns `true` if its unlock condition is currently met. Each frame you run them all; the ones that fire enable a new element in the selector.
+
+Closures are the most-loved Rust feature for people coming from JS, Python, or Swift. They're functions you can pass around, store, capture variables in. Used carefully they're a superpower; used carelessly they cause lifetime headaches. Today is a controlled introduction — every closure in the recipe table has the same simple shape, so the lifetime questions don't arise.
+
+---
+
+## Concepts covered
+
+- `|grid| { ... }` syntax for closures
+- The three closure traits: `Fn` (borrow), `FnMut` (mutate captures), `FnOnce` (consume captures)
+- `Box<dyn Fn(...) -> bool>` — storing closures behind a trait object
+- `move` for closures: `move |grid| { ... }`
+- `.any(|cell| ...)` — iterator method that returns true if any item matches
+- A `Recipe { name, predicate, unlocks }` struct holding a closure inside
+
+---
+
+## Building towards `sand-sim`
+
+Today's recipe table is the **gameplay engine** of v1.0. Session 20 builds the codex UI on top — discovered elements appear in colour; locked ones as grey silhouettes. Session 21 adds gunpowder and glass as new elements gated by recipes. Session 23 adds three *hidden* recipes that aren't hinted anywhere. By v1.0 ship, the recipe table is the spine of the discovery experience.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 18 finished. Save/load work. The project is in modules. Eleven elements exist. The selector currently shows all of them.
+
+### 1. The recipe data structure — 4 minutes
+
+Create `src/recipes.rs`:
 
 ```rust
-fn main() {
-    let x = 10;
+use crate::elements::{Cell, CellType, COLS, ROWS};
+use serde::{Serialize, Deserialize};
 
-    let read       = |y: i32| y + x;          // captures x by reference  → Fn
-    let mut total  = 0;
-    let mut accum  = |y: i32| total += y;     // captures total by &mut    → FnMut
-    let s = String::from("hello");
-    let consume    = move || println!("{}", s); // moves s into closure    → FnOnce
-
-    println!("{}", read(5));                  // 15
-    accum(1); accum(2); accum(3);
-    println!("{}", total);                    // 6
-    consume();                                // hello   (s is now owned by closure)
-    // println!("{}", s);                     // ERROR — s moved
+/// A recipe: a check on the grid that, when first true, unlocks an element.
+pub struct Recipe {
+    pub name: &'static str,
+    pub unlocks: CellType,
+    pub predicate: Box<dyn Fn(&Vec<Vec<Cell>>) -> bool + Send + Sync>,
 }
-```
 
-Most of the time you write a closure and never think about which trait it implements — the compiler does it for you.
+/// Track which elements the player has unlocked.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Discoveries {
+    pub unlocked: Vec<CellType>,
+}
 
-### 2. `move` for "take it with you"
-
-When does `move` matter? When the closure outlives the scope of the captured variable:
-
-```rust
-fn make_counter() -> impl FnMut() -> u32 {
-    let mut n = 0;
-    move || {           // without `move`, n would be borrowed and you'd get an error
-        n += 1;
-        n
+impl Discoveries {
+    pub fn new() -> Self {
+        Self {
+            unlocked: vec![
+                CellType::Sand,
+                CellType::Water,
+                CellType::Stone,
+                CellType::Wood,
+            ],
+        }
     }
-}
 
-let mut c = make_counter();
-println!("{} {} {}", c(), c(), c());     // 1 2 3
-```
-
-`n` is local to `make_counter`. We return a closure that uses `n`. Without `move`, the closure would borrow `n` from `make_counter`'s stack frame — but `make_counter` is about to return and that frame is gone. With `move`, the closure owns its own `n` going forward. Compiler-enforced safety.
-
-### 3. The big iterator adaptors you didn't see in Session 12
-
-```rust
-let xs = vec![1, 2, 3];
-let ys = vec!['a', 'b', 'c'];
-
-let zipped: Vec<(i32, char)> = xs.iter().copied().zip(ys.iter().copied()).collect();
-// [(1,'a'), (2,'b'), (3,'c')]
-
-let chained: Vec<i32> = (1..=3).chain(10..=12).collect();
-// [1, 2, 3, 10, 11, 12]
-
-let flatted: Vec<i32> = vec![vec![1,2], vec![3,4]].into_iter().flatten().collect();
-// [1, 2, 3, 4]
-
-let mapped: Vec<i32> = (1..=3).flat_map(|n| vec![n, n*10]).collect();
-// [1, 10, 2, 20, 3, 30]      — flat_map = map + flatten
-
-let stepped: Vec<i32> = (0..20).step_by(5).collect();
-// [0, 5, 10, 15]
-
-let cycled: Vec<i32> = vec![1, 2, 3].into_iter().cycle().take(7).collect();
-// [1, 2, 3, 1, 2, 3, 1]      — repeats forever; take limits it
-```
-
-`.cycle()` is interesting — it makes a *finite* iterator infinite. You normally have to combine it with `.take(n)` to actually consume it.
-
-### 4. `collect` is more flexible than you thought
-
-```rust
-let s: String = vec!['h', 'i'].into_iter().collect();    // "hi"
-use std::collections::HashMap;
-let m: HashMap<i32, i32> = (0..3).map(|n| (n, n*n)).collect();  // {0:0, 1:1, 2:4}
-
-// Result-aware collect — gather Ok values, short-circuit on first Err
-let parsed: Result<Vec<i32>, _> = vec!["1","2","3"].iter().map(|s| s.parse()).collect();
-// Ok(vec![1, 2, 3])
-let bad:    Result<Vec<i32>, _> = vec!["1","oops","3"].iter().map(|s| s.parse()).collect();
-// Err(...) — stops at "oops"
-```
-
-The `Result` form is unbelievably useful — it turns a vec of `Result`s into a `Result` of vec, returning the first error encountered. Saves you a manual loop.
-
-### 5. Writing your own iterator: `Oscillator`
-
-Now the main event. We define a struct that holds the state of a tone generator, and implement the `Iterator` trait so you can use *all* the adaptors above with it.
-
-`examples/oscillator_iter/src/main.rs`:
-
-```rust
-#[derive(Clone, Copy)]
-pub enum Waveform { Sine, Square, Sawtooth, Triangle }
-
-pub struct Oscillator {
-    waveform: Waveform,
-    sample_rate: u32,
-    frequency: f32,
-    sample_index: u64,
-}
-
-impl Oscillator {
-    pub fn new(waveform: Waveform, frequency: f32, sample_rate: u32) -> Self {
-        Self { waveform, sample_rate, frequency, sample_index: 0 }
+    pub fn is_unlocked(&self, t: CellType) -> bool {
+        self.unlocked.contains(&t)
     }
-}
 
-impl Iterator for Oscillator {
-    type Item = f32;
-
-    fn next(&mut self) -> Option<f32> {
-        let t = self.sample_index as f32 / self.sample_rate as f32;
-        let phase = 2.0 * std::f32::consts::PI * self.frequency * t;
-        let cycles = self.frequency * t;
-        let frac = cycles - cycles.floor();   // 0.0 → 1.0 across each cycle
-
-        let v = match self.waveform {
-            Waveform::Sine     => phase.sin(),
-            Waveform::Square   => if phase.sin() >= 0.0 { 1.0 } else { -1.0 },
-            // sawtooth: ramps from -1 to 1 over each cycle
-            Waveform::Sawtooth => 2.0 * frac - 1.0,
-            // triangle: 0 → 1 → 0 → -1 → 0 over each cycle
-            Waveform::Triangle => 4.0 * (frac - 0.5).abs() - 1.0,
-        };
-
-        self.sample_index += 1;
-        Some(v)
+    pub fn unlock(&mut self, t: CellType) -> bool {
+        if !self.is_unlocked(t) {
+            self.unlocked.push(t);
+            true
+        } else {
+            false
+        }
     }
 }
 ```
 
-Three things make this work:
+`Box<dyn Fn(...) -> bool + Send + Sync>` is a *trait object*. It's the only practical way to put multiple different closures in the same `Vec` — each closure has a unique concrete type, but they all implement `Fn(...) -> bool`, so we hide behind the trait.
 
-1. **`type Item = f32;`** — declares what this iterator produces.
-2. **`fn next(&mut self) -> Option<Self::Item>`** — the *only* method you must implement. Returns `Some(value)` for each iteration, `None` to stop. Ours never returns `None` — it's an **infinite** iterator. (That's why `.take(n)` is essential when consuming it.)
-3. **`Iterator for Oscillator`** — once implemented, you get `.map`, `.filter`, `.take`, `.zip`, `.collect`, etc. for free.
+`+ Send + Sync` are extra trait bounds that say "this is safe to send across threads." Not used today, but they cost nothing and make the type easier to compose later.
 
-### 6. Use it
+### 2. The recipe table — 6 minutes
 
 ```rust
-fn main() {
-    let osc = Oscillator::new(Waveform::Sine, 440.0, 44100);
+pub fn build_recipes() -> Vec<Recipe> {
+    let mut recipes: Vec<Recipe> = Vec::new();
 
-    let one_second: Vec<f32> = osc.take(44100).collect();
-    println!("Generated {} samples; first 5 = {:?}", one_second.len(), &one_second[..5]);
+    // Recipe: Fire — discovered by placing wood next to a heat source.
+    // (For Month 3, we assume fire is always available; this is just for illustration.)
+    recipes.push(Recipe {
+        name: "Fire",
+        unlocks: CellType::Fire,
+        predicate: Box::new(|grid| {
+            cells_match(grid, |c| c.cell_type == CellType::Wood && c.temperature > 150.0)
+        }),
+    });
 
-    // Different waveforms, half a second each
-    for wf in [Waveform::Sine, Waveform::Square, Waveform::Sawtooth, Waveform::Triangle] {
-        let osc = Oscillator::new(wf, 220.0, 44100);
-        let buf: Vec<f32> = osc.take(22050).collect();
-        let max = buf.iter().cloned().fold(f32::MIN, f32::max);
-        let min = buf.iter().cloned().fold(f32::MAX, f32::min);
-        println!("{:?}: {} samples, range [{:.2}, {:.2}]", wf as u8, buf.len(), min, max);
+    // Recipe: Oil — discovered when wood is fully charred.
+    recipes.push(Recipe {
+        name: "Oil",
+        unlocks: CellType::Oil,
+        predicate: Box::new(|grid| {
+            // (Pretend "ash" comes from wood with very high charring. Simplified.)
+            cells_match(grid, |c| c.cell_type == CellType::Wood && c.temperature > 500.0)
+        }),
+    });
+
+    // Recipe: Acid — discovered the first time fire melts stone (i.e., lava + water = stone happens).
+    recipes.push(Recipe {
+        name: "Acid",
+        unlocks: CellType::Acid,
+        predicate: Box::new(|grid| {
+            adjacent_pair(grid, CellType::Lava, CellType::Water)
+        }),
+    });
+
+    // Recipe: Lava — discovered the first time fire meets stone.
+    recipes.push(Recipe {
+        name: "Lava",
+        unlocks: CellType::Lava,
+        predicate: Box::new(|grid| {
+            adjacent_pair(grid, CellType::Fire, CellType::Stone)
+        }),
+    });
+
+    // Recipe: Ice — discovered when steam condenses at the top.
+    recipes.push(Recipe {
+        name: "Ice",
+        unlocks: CellType::Ice,
+        predicate: Box::new(|grid| {
+            grid[0].iter().any(|c| matches!(c.cell_type, CellType::Steam))
+        }),
+    });
+
+    recipes
+}
+
+/// Helper: does any cell match the predicate?
+fn cells_match(grid: &Vec<Vec<Cell>>, pred: impl Fn(&Cell) -> bool) -> bool {
+    grid.iter().flat_map(|row| row.iter()).any(pred)
+}
+
+/// Helper: is there at least one (a, b) pair of adjacent cells?
+fn adjacent_pair(grid: &Vec<Vec<Cell>>, a: CellType, b: CellType) -> bool {
+    for r in 0..ROWS {
+        for c in 0..COLS {
+            if grid[r][c].cell_type != a { continue; }
+            for (dr, dc) in [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)] {
+                let nr = r as i32 + dr;
+                let nc = c as i32 + dc;
+                if nr < 0 || nr >= ROWS as i32 || nc < 0 || nc >= COLS as i32 { continue; }
+                if grid[nr as usize][nc as usize].cell_type == b { return true; }
+            }
+        }
+    }
+    false
+}
+```
+
+Each `Box::new(|grid| { ... })` is a closure literal boxed into a `dyn Fn`. The `|grid|` is the parameter list; the body is whatever condition matters.
+
+Notice **`impl Fn(&Cell) -> bool`** in `cells_match`'s signature — that's a *generic* form. It accepts any closure (or function pointer) with that signature, *without* boxing. We don't need `Box` here because the closure isn't stored; it's used and dropped.
+
+### 3. The recipe-check pass — 3 minutes
+
+In `main.rs` or `simulation.rs`:
+
+```rust
+use crate::recipes::{Recipe, Discoveries, build_recipes};
+
+let recipes = build_recipes();
+let mut discoveries = Discoveries::new();
+
+// Inside the loop, just after step():
+for recipe in &recipes {
+    if !discoveries.is_unlocked(recipe.unlocks) && (recipe.predicate)(&grid) {
+        if discoveries.unlock(recipe.unlocks) {
+            println!("Discovered: {}!", recipe.name);
+            // TODO Session 20: trigger a brief on-screen banner.
+        }
     }
 }
 ```
 
-Notice the second loop: `Oscillator` becomes an iterator of `f32` you can throw any iterator combinator at. That's the win.
+`(recipe.predicate)(&grid)` calls the boxed closure — the parens around `recipe.predicate` are required because of how Rust parses method-like syntax on boxed values.
 
----
+### 4. Filter the selector to discovered elements — 2 minutes
 
-## Common Mistakes
-
-- **Forgetting `move` for closures returned from a function or sent to a thread** — the borrow checker will tell you, but the error can be cryptic. The mental rule: "does this closure outlive the scope of any captured variable?" If yes, you need `move`.
-- **Calling `.collect()` without a type annotation** — Rust can't guess what you're collecting into. Use `let v: Vec<_> = ...` or turbofish `.collect::<Vec<_>>()`.
-- **Iterating an infinite iterator without `.take(n)`** — your program runs forever. Always cap infinite iterators.
-- **`Vec` of `Result` vs `Result` of `Vec`** — `.collect::<Vec<Result<T, E>>>()` keeps the Errs in the vec; `.collect::<Result<Vec<T>, E>>()` short-circuits on the first Err. Pick deliberately.
-
----
-
-## Session Challenge
-
-1. Add `Waveform::Noise` that returns a random value in `[-1.0, 1.0]` per sample (use `fastrand`).
-2. Add a `vibrato_freq: f32` field to `Oscillator`. In `next()`, modulate the *frequency* by a small slow sine — `freq * (1.0 + 0.01 * (2.0 * PI * 5.0 * t).sin())` for a 5 Hz vibrato. Listen to the difference (you can write samples to a WAV using your Session 18 code).
-3. Make a "chord" iterator that holds three `Oscillator`s and returns the *average* of their three samples each step. (Hint: store `Vec<Oscillator>` and call `.next()` on each in turn.)
-
----
-
-## Quick Reference
+In `ui::draw_selector`:
 
 ```rust
-// Closure traits
-fn taking_fn      <F: Fn(i32) -> i32>(f: F)     { f(0); f(1); }      // many calls, no mutation
-fn taking_fn_mut  <F: FnMut(i32) -> i32>(mut f: F) { f(0); f(1); }   // many calls, can mutate captures
-fn taking_fn_once <F: FnOnce(i32) -> i32>(f: F) { f(0); }            // exactly one call
+pub fn draw_selector(selected: CellType, brush_radius: i32, discoveries: &Discoveries) {
+    let all = [
+        CellType::Sand, CellType::Water, CellType::Stone, CellType::Wood,
+        CellType::Fire, CellType::Oil, CellType::Acid, CellType::Lava, CellType::Ice,
+    ];
 
-// move
-let s = String::from("x");
-std::thread::spawn(move || println!("{}", s));  // s moves into the new thread
+    let visible: Vec<CellType> = all.iter().copied()
+        .filter(|t| discoveries.is_unlocked(*t))
+        .collect();
 
-// Custom iterator
-struct Counter(u32);
-impl Iterator for Counter {
-    type Item = u32;
-    fn next(&mut self) -> Option<u32> {
-        if self.0 < 5 { self.0 += 1; Some(self.0) } else { None }
-    }
+    // ... rest of the swatch-drawing loop using `visible` ...
 }
-let v: Vec<u32> = Counter(0).collect();         // [1, 2, 3, 4, 5]
 ```
 
+The keys that pick elements should also gate on discovery — pressing `5` for fire before fire is unlocked should do nothing.
+
+### 5. Persist discoveries — 2 minutes
+
+`Discoveries` already has `Serialize, Deserialize`. Save it alongside the grid in `persist.rs`:
+
+```rust
+#[derive(Serialize, Deserialize)]
+struct SaveState {
+    version: u32,
+    grid: Vec<Vec<Cell>>,
+    discoveries: Discoveries,        // new
+}
+```
+
+(You'll need to update `save()` and `load()` to pass `&discoveries` and return both grid and discoveries.)
+
+**Save. Run.** You start with sand, water, stone, wood. Build something with each. Heat wood (place it next to fire — wait, fire isn't unlocked. So first, get fire's recipe condition: heat wood above 150°. Pour water under a heat-source brush. Heat the wood with the warm water. Eventually fire unlocks. Then make lava. Then water-meets-lava unlocks acid. Each unlock is a tiny *aha*.
+
+> **The Wow Moment.** Start a fresh save. Look at the selector: four squares. Play for ten minutes. Look back: eight squares. You've **built a discovery-based progression system in two files and 200 lines.** That's the whole gameplay loop of every alchemy-style game (Doodle God, Little Alchemy, Noita's spell discovery) you've ever played. **Session 20** makes it gorgeous; today's wow is "*the system actually works.*"
+
+### 6. (Optional) Recipe trigger banner — 4 minutes
+
+A two-second on-screen flash when an unlock happens:
+
+```rust
+let mut banner: Option<(String, u32)> = None;        // (text, frames left)
+
+// On unlock:
+banner = Some((format!("Discovered: {}!", recipe.name), 120));
+
+// Each frame:
+if let Some((text, frames_left)) = &mut banner {
+    draw_text(text, screen_width()/2.0 - 100.0, 60.0, 32.0, YELLOW);
+    *frames_left = frames_left.saturating_sub(1);
+    if *frames_left == 0 { banner = None; }
+}
+```
+
+The `Option<(String, u32)>` cleanly encodes "either no banner, or a banner with N frames remaining."
+
 ---
 
-## Further Reading
+## Linux (Ubuntu) note
 
-Curated extra material on the topics covered in this session (Closures and Iterators (deep dive)). All free; all current as of writing.
+Closures and the `Fn` traits are pure-language features — no OS impact. One quality-of-life note for Ubuntu:
 
-- [**The Rust Book** — *Closures: Anonymous Functions That Capture Their Environment* (13.1)](https://doc.rust-lang.org/book/ch13-01-closures.html) — Read again now that you've seen them at scale.
-- [**The Rust Book** — *Processing a Series of Items with Iterators* (13.2)](https://doc.rust-lang.org/book/ch13-02-iterators.html) — The companion chapter, with the lazy-evaluation explanation that makes everything click.
-- [**`itertools` crate** — extra adapters](https://docs.rs/itertools/latest/itertools/) — Adds `chunks`, `tuple_windows`, `cartesian_product`, and dozens more useful adapters not in `std`.
-- [**Niko Matsakis — *Closures Magic Functions***](https://smallcultfollowing.com/babysteps/blog/2014/05/13/focusing-on-ownership/) — From a Rust language designer; how closures relate to ownership.
+- The `println!("Discovered: {}!", recipe.name)` lines are useful when developing, but won't show if you launch via a desktop `.desktop` file (no terminal attached). For Ubuntu, also `eprintln!` to stderr — and journalctl will capture stderr from any process you launch via systemd:
+
+  ```bash
+  systemctl --user status sand-sim     # if launched as a user service
+  journalctl --user -u sand-sim -f
+  ```
+
+  Overkill for a one-person learning project. Mentioned because once you're shipping Linux desktop apps for real, this is how you debug "where did the print go?"
+
+- **Boxed closures and Rust binary size.** Each `Box::new(|grid| {...})` is a small heap allocation. For 5 recipes, that's ~200 bytes of heap. Trivially small. Don't optimise.
+
+- The `+ Send + Sync` bounds on the boxed closure are required *if* you ever pass the recipe table to another thread. For a single-threaded sim, the bounds are unused but cost nothing. Leave them in — future-proofing.
+
+---
+
+## Common mistakes
+
+### `error[E0277]: 'closure' may not be 'Send'`
+
+Your closure captures a non-`Send` variable (e.g. an `Rc<...>`). Either drop the `Send` bound on `Recipe.predicate`, or use `Arc<...>` instead. For the simple recipes in this session, you shouldn't capture anything — the only argument is `grid`, passed in.
+
+### `error[E0596]: cannot borrow data in a '&' reference as mutable`
+
+You wrote `(recipe.predicate)(grid)` and forgot the `&`. Fix: `(recipe.predicate)(&grid)`.
+
+### Recipe never fires
+
+Add a `println!("checking recipe: {} = {}", recipe.name, fired)` inside the loop to confirm the predicate is being called and what it returns. Usually the bug is in the predicate (e.g. testing for adjacency in only one direction).
+
+### Recipe fires on every frame
+
+You forgot the `discoveries.is_unlocked(recipe.unlocks)` guard. Without it, the predicate fires every frame the condition holds; the banner stays up forever; you spam the terminal.
+
+### `error[E0277]: 'CellType' is not 'Copy'`
+
+You're somewhere assuming `CellType` is `Copy` (e.g. `discoveries.unlock(recipe.unlocks)` where `recipe.unlocks` is `CellType`). It IS `Copy` — but if you accidentally removed it from the derive in an earlier refactor, this catches you. Restore `Copy` in `#[derive(...)]`.
+
+### Closure captures cause borrow checker errors
+
+If you write a closure that captures a `&mut` of something inside the loop, Rust may not let you call it. Workaround: keep recipe predicates *pure* — they should only depend on their `&grid` argument. Discovery tracking lives outside the closure.
 
 ---
 
-## Stuck?
+## Session challenge
 
-You're not the first. Three places that work when you're properly stuck:
+Pick one — no solution provided.
 
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+1. **A reverse-discovery key.** Press `Shift+0` to *forget* everything and reset `Discoveries` to the starting four. Useful for testing recipes during development.
+2. **A recipe that requires *all* of (A, B, C) on the grid simultaneously.** E.g. "discover gunpowder when you have wood AND fire AND smoke all in the same world." Single closure, three `cells_match` calls combined with `&&`.
+3. **A recipe with a count threshold.** "Have at least 100 lava cells at once." Use `cells_match`'s sibling that returns the count instead of bool.
+4. **Recipe difficulty levels.** Add a `difficulty: u8` field. The codex (Session 20) can colour-code recipes: easy (green), medium (yellow), hard (red). Adds dimensionality without adding new mechanics.
 
 ---
-## DofE Log Reminder
 
-Row 19. Note in your log that you wrote your first custom iterator — that's a real Rust milestone.
+## Quick reference
+
+| What | Code |
+|---|---|
+| Closure literal | `\|x\| x * 2` |
+| Closure with body | `\|x, y\| { x + y }` |
+| Generic-Fn parameter | `fn run(f: impl Fn(i32) -> i32)` |
+| Boxed closure | `Box<dyn Fn(i32) -> i32>` |
+| Move closure | `move \|x\| x + n` |
+| Call a boxed closure | `(boxed)(arg)` |
+| `.any(predicate)` | returns `bool` |
+| `.all(predicate)` | returns `bool` |
+| `.find(predicate)` | returns `Option<&T>` |
+| `.count()` after filter | returns `usize` |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 19**. Worth recording:
+
+- The first recipe you discovered "by accident" while playing rather than by setting up the condition deliberately — that emergent feel is the whole point
+- Your sentence on closures: what's the difference between a closure and a regular function?

@@ -1,274 +1,287 @@
-# Session 4: Control Flow
+# Session 4 — Control Flow and a Better Update Loop
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-## What You'll Learn
-
-How to make decisions (`if`/`else`), how to repeat (`loop`, `while`, `for`), and how Rust loops can return values. We'll print an ASCII piano keyboard to put it all together.
-
-## The Big Idea
-
-Rust's control-flow constructs (`if`, `loop`, `match`) are **expressions**. That means they produce values, which means you can write things like `let x = if cond { 1 } else { 2 };` directly. Most languages either can't do this or have a separate "ternary" syntax for it. Rust just lets you use the same constructs everywhere.
-
-## Concepts Covered
-
-- `if` / `else if` / `else` (and `if` as an expression)
-- `loop` — infinite loop with `break` (and `break value` to return)
-- `while` — loop while a condition holds
-- `for x in iter` — the workhorse loop
-- Ranges: `0..10` (exclusive end) and `0..=10` (inclusive end)
-- `break` and `continue`
-
-## Building Towards `music-theory-cli`
-
-The project doesn't need infinite loops, but it does need to iterate over the seven notes of a scale and decide what chord quality each one has. That's a `for` loop and an `if`/`match`. We'll practise both today.
+> **Stuck on a word?** Things like *boundary condition*, *refactor*, *short-circuit*, *guard clause* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-1/session-04/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-1/session-04/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session your simulation will have a **clean, well-structured update function**, sand will **stop falling cleanly at the bottom edge instead of panicking**, and the code will be ready to take on a second element type next session.
 
-### 1. `if` is an expression
+---
 
-```rust
-fn main() {
-    let velocity = 72;
-    let dynamic = if velocity > 100 {
-        "loud"
-    } else if velocity > 60 {
-        "medium"
-    } else {
-        "soft"
-    };
-    println!("Velocity {} → {}", velocity, dynamic);
-}
-```
+## What you'll learn
 
-That whole `if`/`else if`/`else` produces a `&'static str`. We bind that value to `dynamic`. Note **no semicolons** on the values inside each branch — those are the expressions being returned by each branch. Every branch must produce the same type.
+- `if`/`else if`/`else` in proper depth, including chained guard clauses
+- `continue` and `break` as escape hatches inside loops
+- Why bounds-checking every grid access is non-negotiable, and how to do it elegantly
+- The discipline of **extracting a function** — and the compiler's role as your refactoring buddy
+- A preview of `match` (it lands properly in Session 5)
 
-### 2. `for` over a range
+---
 
-```rust
-for i in 0..5 {
-    println!("{}", i);   // 0, 1, 2, 3, 4
-}
+## The big idea
 
-for i in 1..=4 {
-    println!("{}", i);   // 1, 2, 3, 4 (note the =)
-}
-```
+You've got working sand. You're about to add water, stone-with-different-physics, fire, oil, lava — eight or more behaviours in the same loop. **If you don't tidy the architecture now, that loop becomes unreadable by Session 6.**
 
-`0..5` is a half-open range (excludes 5). `0..=4` is an inclusive range. Pick whichever reads better.
+Today's work is a small refactor: lift the per-cell logic into a `step()` function with clear boundary checks. No new visible feature — but the next ten sessions become noticeably easier to write. *Refactoring before you need to* is one of the cheapest skills to develop and one of the highest-paid.
 
-### 3. `for` over a slice
+The "boundary condition" framing matters too. Every physics simulation in the world — from `sand-sim` to climate models — has to decide what happens at the edge of the grid. Your edge says "sand stops, doesn't wrap." That's a choice. Game of Life often wraps the edges into a torus. Real wave tanks absorb. The simulation behaviour at the edge is part of the simulation.
 
-```rust
-let names = ["C", "D", "E", "F", "G", "A", "B"];
-for name in names {
-    print!("{} ", name);
-}
-println!();
-```
+---
 
-`for name in names` calls `.into_iter()` on the array under the hood. We'll meet iterators properly in Session 12.
+## Concepts covered
 
-### 4. `loop` and `break value`
+- `if`/`else if`/`else` chains
+- Boolean operators: `&&` (AND), `||` (OR), `!` (NOT), short-circuit evaluation
+- `continue` and `break` for early loop exits
+- Safe bounds-checking patterns
+- Function extraction: pulling cell logic out of the main loop
+- Reading compiler errors as a refactoring tool
+- Brief preview of `match` (next session covers it properly)
 
-`loop` is an infinite loop. The neat trick: you can `break` out of it with a value, and the whole `loop` becomes an expression that produces that value:
+---
+
+## Building towards `sand-sim`
+
+After today, adding a new element type means **one new branch in the update function**, not a hand-edit through hundreds of lines of nested loops. The Session 5 `match` rewrite, the Session 6 enum upgrade, the Session 11 fire rule, the Session 14 reactions HashMap — every one of those starts from this clean shape.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** You finished [Session 3](../session-03/README.md). Sand falls, piles, spreads diagonally. The whole simulation step is inside `main`. If sand-pouring crashes or stops at the wrong place, fix that before refactoring.
+
+### 1. Extract `step()` properly — 3 minutes
+
+If you followed Session 3's structure you may already have a `step(&mut grid)` function. If not, lift the bottom-to-top loop out of `main`:
 
 ```rust
-let mut n = 1;
-let first_power_of_two_over_1000 = loop {
-    if n > 1000 {
-        break n;
-    }
-    n *= 2;
-};
-println!("{}", first_power_of_two_over_1000);   // 1024
-```
-
-Useful when you're searching for something and the loop body is more complex than a `while` condition can express.
-
-### 5. `while`
-
-```rust
-let mut frequency = 27.5_f64;       // A0
-while frequency < 5000.0 {
-    println!("{:>7.2} Hz", frequency);
-    frequency *= 2.0;
-}
-```
-
-Prints every A from A0 to A7 by repeatedly doubling.
-
-### 6. `continue` and `break`
-
-```rust
-for i in 1..=20 {
-    if i % 2 == 0 {
-        continue;          // skip even numbers
-    }
-    if i > 15 {
-        break;             // stop after 15
-    }
-    println!("{}", i);     // prints 1, 3, 5, 7, 9, 11, 13, 15
-}
-```
-
-### 7. The piano keyboard project
-
-The pattern of black and white keys repeats every octave: positions `0, 2, 4, 5, 7, 9, 11` (C, D, E, F, G, A, B) within an octave are white; the rest (`1, 3, 6, 8, 10` — C#, D#, F#, G#, A#) are black.
-
-Goal: print a 2-octave ASCII keyboard, with `W` for white keys and `B` for black keys, and the note name underneath.
-
-```rust
-fn main() {
-    let names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    let octaves = 2;
-    let total_semitones = octaves * 12;
-
-    print!("Keys:  ");
-    for i in 0..total_semitones {
-        let in_octave = i % 12;
-        let is_black = matches!(in_octave, 1 | 3 | 6 | 8 | 10);
-        if is_black {
-            print!("B  ");
-        } else {
-            print!("W  ");
+fn step(grid: &mut Vec<Vec<u8>>) {
+    for row in (0..ROWS - 1).rev() {
+        for col in 0..COLS {
+            update_cell(grid, row, col);
         }
     }
-    println!();
+}
+```
 
-    print!("Notes: ");
-    for i in 0..total_semitones {
-        let in_octave = i % 12;
-        print!("{:<3}", names[in_octave]);
+And add a new function that handles a *single cell*:
+
+```rust
+fn update_cell(grid: &mut Vec<Vec<u8>>, row: usize, col: usize) {
+    let cell = grid[row][col];
+
+    if cell == SAND {
+        update_sand(grid, row, col);
     }
-    println!();
+    // Future: else if cell == WATER { update_water(grid, row, col); }
+    //         else if cell == FIRE  { update_fire(grid, row, col); }
 }
 ```
 
-Output:
-
-```
-Keys:  W  B  W  B  W  W  B  W  B  W  B  W  W  B  W  B  W  W  B  W  B  W  B  W
-Notes: C  C# D  D# E  F  F# G  G# A  A# B  C  C# D  D# E  F  F# G  G# A  A# B
-```
-
-Two new things in there:
-
-- **`matches!(value, pattern)`** is a macro that returns `true` if `value` matches the pattern. We'll cover patterns properly next session — this is a sneak peek.
-- **`print!`** (without the `ln`) doesn't add a newline. Useful for building up a row of characters before flushing the line.
-
-The complete project is in `examples/piano_keyboard/`.
-
----
-
-## Common Mistakes
-
-### ❌ Putting parentheses around the `if` condition
+And the sand-specific logic in its own function:
 
 ```rust
-if (x > 0) { ... }    // ❌ allowed but not idiomatic
-```
+fn update_sand(grid: &mut Vec<Vec<u8>>, row: usize, col: usize) {
+    // Try straight down.
+    if grid[row + 1][col] == EMPTY {
+        grid[row + 1][col] = SAND;
+        grid[row][col]     = EMPTY;
+        return;
+    }
 
-The compiler will warn you. Drop the parentheses: `if x > 0 { ... }`.
+    // Try a diagonal — pick the order randomly.
+    let try_left_first = fastrand::bool();
+    let order: [i32; 2] = if try_left_first { [-1, 1] } else { [1, -1] };
 
-### ❌ Mismatched branch types
-
-```rust
-let x = if cond { 1 } else { "hello" };   // 💥
-```
-
-```
-error[E0308]: `if` and `else` have incompatible types
-```
-
-Both branches must produce the same type. **Fix:** make them match.
-
-### ❌ Forgetting that `0..10` excludes 10
-
-```rust
-for i in 0..10 {
-    println!("{}", i);   // 0..9, not 0..10
+    for dx in order {
+        let nc = col as i32 + dx;
+        if nc < 0 || nc >= COLS as i32 { continue; }
+        let nc = nc as usize;
+        if grid[row + 1][nc] == EMPTY {
+            grid[row + 1][nc] = SAND;
+            grid[row][col]    = EMPTY;
+            return;
+        }
+    }
 }
 ```
 
-If you wanted 0–10 inclusive, write `0..=10`.
+**Why three functions instead of one?** Each does one job at one level of abstraction:
 
-### ❌ Infinite loop you can't break out of
+- `step` knows about the grid as a whole and the iteration order.
+- `update_cell` knows about which element rules to apply.
+- `update_sand` knows about the physics of sand.
+
+When you add water in Session 5 it'll be `update_water` next to `update_sand`. Same shape, isolated, easy to reason about.
+
+### 2. Bulletproof bounds checking — 4 minutes
+
+`update_sand` currently checks `nc < 0 || nc >= COLS as i32` for the diagonal — good. But `grid[row + 1][col]` assumes `row + 1 < ROWS`. We're saved here because the outer loop only goes up to `ROWS - 1` (so `row + 1 < ROWS` always holds), but it's worth seeing the bullet-proof shape:
 
 ```rust
-loop {
-    println!("forever");
-    // no break, no return
+fn in_bounds(row: i32, col: i32) -> bool {
+    row >= 0 && row < ROWS as i32 && col >= 0 && col < COLS as i32
 }
 ```
 
-Press `Ctrl+C` to kill it. Then add a `break` condition.
+Then any access becomes:
+
+```rust
+let nr = row as i32 + 1;
+let nc = col as i32 + dx;
+if !in_bounds(nr, nc) { continue; }
+// safe to use grid[nr as usize][nc as usize]
+```
+
+The `!` is logical NOT. `&&` is logical AND. `||` is logical OR. They **short-circuit**: in `a && b`, if `a` is false, `b` is never evaluated. In `a || b`, if `a` is true, `b` is never evaluated. This matters when one of the operands might panic — e.g. `i < v.len() && v[i] > 0` is safe even when `v` is empty, because `v[i]` isn't evaluated.
+
+Add `in_bounds` to your file and use it in `update_sand`. This single helper will be reused dozens of times before the project ends.
+
+### 3. Hook it into `main` — 1 minute
+
+Inside the `loop` in `main`, the per-frame block should now read cleanly:
+
+```rust
+        // 1. Input
+        if is_key_pressed(KeyCode::Key1) { selected = SAND;  }
+        if is_key_pressed(KeyCode::Key2) { selected = WATER; }
+        if is_key_pressed(KeyCode::Key3) { selected = STONE; }
+
+        if is_mouse_button_down(MouseButton::Left) {
+            let (mx, my) = mouse_position();
+            let col = (mx / CELL_SIZE) as usize;
+            let row = (my / CELL_SIZE) as usize;
+            if row < ROWS && col < COLS {
+                grid[row][col] = selected;
+            }
+        }
+
+        // 2. Simulation
+        step(&mut grid);
+
+        // 3. Render
+        for row in 0..ROWS {
+            for col in 0..COLS {
+                let cell = grid[row][col];
+                if cell != EMPTY {
+                    let x = col as f32 * CELL_SIZE;
+                    let y = row as f32 * CELL_SIZE;
+                    draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, cell_colour(cell));
+                }
+            }
+        }
+```
+
+That **input → simulate → render** shape is the spine of every real-time program in the world.
+
+**First runnable checkpoint.** `cargo run`. Pour sand. Pour it off the bottom edge. **No panics, sand stops at the bottom.** The animation is identical to Session 3 — but every line of the loop is doing a clearly-named job.
+
+### 4. The `match` preview — 3 minutes
+
+Replace the `if cell == SAND` chain in `update_cell` with a `match`:
+
+```rust
+fn update_cell(grid: &mut Vec<Vec<u8>>, row: usize, col: usize) {
+    let cell = grid[row][col];
+
+    match cell {
+        SAND  => update_sand(grid, row, col),
+        // WATER => update_water(grid, row, col),
+        // FIRE  => update_fire(grid, row, col),
+        _ => {}
+    }
+}
+```
+
+Note the `_` — that's the **wildcard pattern**. It matches anything not handled by the earlier arms. Without it, `match` would fail to compile because it has to handle *every possible `u8` value* (0–255), and we've only spelled out one.
+
+Save. Run. Same behaviour, two fewer keystrokes. Session 5 unpacks `match` properly.
+
+> **The Wow Moment.** Look at your `main` function now. Three short blocks: input, simulate, render. Each *says* what it does. The compiler will tell you exactly where to add water rules tomorrow. *This is what "clean code" feels like* — and you got here without anyone breathing down your neck about style.
+
+### 5. (Optional) Wrap-around boundary as an experiment — 3 minutes
+
+Comment out your bottom edge check and replace it with a wrap:
+
+```rust
+let next_row = (row + 1) % ROWS;   // 0 if we'd go off the bottom
+if grid[next_row][col] == EMPTY {
+    grid[next_row][col] = SAND;
+    grid[row][col] = EMPTY;
+    return;
+}
+```
+
+Run it. Sand that falls off the bottom now appears at the top. **You implemented a torus.** Set it back before Session 5 — sand-sim doesn't want a torus — but you've now physically experienced "the boundary is a design choice."
 
 ---
 
-## Session Challenge
+## Linux (Ubuntu) note
 
-Extend `examples/piano_keyboard` to:
+Pure-Rust session, identical commands on Ubuntu. Two VS Code conveniences worth knowing if you haven't found them yet:
 
-1. Print the keyboard for **all 88 keys** of a real piano (from A0 to C8).
-2. Add a third row showing the **MIDI note number** under each key. (A0 is MIDI 21, C8 is MIDI 108.)
-3. Mark **middle C** (MIDI 60) with an arrow or asterisk so it's easy to find.
+- **`Ctrl+.`** (the *Quick Fix* shortcut) is the same on Ubuntu as on Windows. When rust-analyzer underlines an error, hit `Ctrl+.` to see suggested fixes — it often offers "extract into function," which does today's refactor *for* you. Try it on a selected block.
+- **`Ctrl+Shift+P` → "Rust Analyzer: Run"** runs the current binary without leaving the editor. Saves an Alt-Tab to the terminal.
+
+If rust-analyzer is sluggish on Ubuntu, increase its memory cap: open the extension settings and set `rust-analyzer.cargo.allFeatures` to `false` and `rust-analyzer.checkOnSave.command` to `"check"` instead of `"clippy"`.
 
 ---
 
-## Quick Reference
+## Common mistakes
 
-| Concept | Syntax |
+### Sand vanishes when it reaches the bottom row
+
+You wrote `for row in (0..ROWS).rev()` instead of `for row in (0..ROWS - 1).rev()`. When `row == ROWS - 1`, the `grid[row + 1]` access is out of bounds and crashes (or silently corrupts in `--release`). Either iterate to `ROWS - 1` exclusive, or add a `row + 1 < ROWS` guard inside the body.
+
+### `error[E0382]: borrow of moved value: grid`
+
+You wrote `step(grid)` without the `&mut`. The function signature is `fn step(grid: &mut Vec<Vec<u8>>)`, so call sites need to match: `step(&mut grid)`. Without the `&mut`, you'd be *moving* the grid into the function (which would then be unusable in `main` after the call).
+
+### `match` complains "non-exhaustive patterns"
+
+You forgot the `_` wildcard arm. `match` on a `u8` covers 256 possible values; the compiler insists every one is handled. Add `_ => {}` at the bottom.
+
+### Refactor broke the simulation
+
+Run `cargo run` after each function extraction, not all at once. If the second extraction broke things, `git diff` will tell you exactly what changed. (If you're not committing per session yet, this is a good week to start — `git add -A && git commit -m "session 3 complete"` after Session 3 done.)
+
+### `error[E0502]: cannot borrow as mutable... already borrowed as immutable`
+
+Trying to read and write the grid in the same expression. E.g. `grid[row + 1][col] = grid[row][col]` looks innocent but isn't — the compiler refuses because the second `grid[row][col]` is an immutable borrow while the assignment is a mutable one. Fix: pull the value into a local first: `let value = grid[row][col]; grid[row + 1][col] = value;`.
+
+---
+
+## Session challenge
+
+Pick one, no solution provided.
+
+1. **Pour rate cap.** Add a counter that limits sand spawns to `N` cells per frame, so dragging slowly produces a trickle and dragging fast doesn't fill the screen instantly.
+2. **Edge mirror.** Instead of sand stopping at the bottom, have it bounce one cell upward — the floor "pushes back." Hint: when straight-down is blocked AND both diagonals are blocked AND we're at `row == ROWS - 2`, move the sand *up*.
+3. **Visualise the iteration order.** During `step`, draw a faint scanline rectangle for the current row. You'll see the bottom-to-top sweep happening live.
+4. **Move `cell_colour` into its own file.** Create `src/colours.rs`, declare `mod colours;` in `main.rs`, mark the function `pub`, call it as `colours::cell_colour(c)`. (Session 17 does this properly; doing it once now demystifies the module system.)
+
+---
+
+## Quick reference
+
+| What | Code |
 |---|---|
-| `if` expression | `let x = if cond { a } else { b };` |
-| Range exclusive | `0..10` |
-| Range inclusive | `0..=10` |
-| `for` loop | `for x in iter { ... }` |
-| `while` loop | `while cond { ... }` |
-| Infinite loop | `loop { ... }` |
-| Loop with value | `let v = loop { break 42; };` |
-| Skip iteration | `continue;` |
-| Exit loop | `break;` |
-| Pattern check | `matches!(value, pattern)` |
+| Logical AND / OR / NOT | `a && b`, `a \|\| b`, `!a` |
+| Early-exit a loop iteration | `continue;` |
+| Stop a loop entirely | `break;` |
+| Bounds-check helper | `fn in_bounds(r: i32, c: i32) -> bool { ... }` |
+| `match` with wildcard | `match v { SAND => ..., _ => {} }` |
+| Function with mutable ref | `fn step(grid: &mut Vec<Vec<u8>>) { ... }` |
+| Call with mutable ref | `step(&mut grid);` |
+| Early return | `return;` |
 
 ---
 
-## Further Reading
+## DofE log reminder
 
-Curated extra material on the topics covered in this session (Control Flow). All free; all current as of writing.
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 4**. Two things to record:
 
-- [**The Rust Book** — *Control Flow* (3.5)](https://doc.rust-lang.org/book/ch03-05-control-flow.html) — Covers `if`, `loop`, `while`, `for`, plus the reason `loop` can return a value.
-- [**Rust by Example** — *Flow of Control*](https://doc.rust-lang.org/rust-by-example/flow_control.html) — Snippet-per-construct, easy to skim.
-- [**Rustlings** — interactive exercises (the `if`, `quiz1`, `primitive_types` sets)](https://github.com/rust-lang/rustlings) — Official Rust team exercise set. Install it (`cargo install rustlings`) and you have a guided drill book.
-
----
-
-## Stuck?
-
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
-
----
-## DofE Log Reminder
-
-> 📝 Session 4 done. Open [`dfe/session-log.md`](../../dfe/session-log.md) and capture the session. Did the keyboard render correctly the first time, or did you get the black/white pattern wrong? That's worth noting.
+- Why you split `step` from `update_cell` from `update_sand` — in your own words. (Naming the *why* is more useful evidence than naming the *what*.)
+- One compiler error you hit during the refactor, and how the message told you exactly what to fix. (This is the assessor's favourite kind of growth signal.)

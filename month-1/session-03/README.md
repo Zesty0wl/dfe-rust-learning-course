@@ -1,267 +1,253 @@
-# Session 3: Functions, Expressions, and Basic I/O
+# Session 3 — Sand Falls
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-## What You'll Learn
-
-How to break code into reusable **functions**, the difference between **expressions** and **statements** (a Rust quirk that's actually wonderful once you see it), and how to read input from the keyboard.
-
-## The Big Idea
-
-Most things in Rust are **expressions** — they produce a value. `5`, `5 + 3`, `if x > 0 { 1 } else { -1 }`, even an entire block `{ let a = 1; let b = 2; a + b }` are all expressions. The few things that aren't (like `let` bindings) are **statements** and end in a semicolon. This is why Rust functions don't usually need a `return` keyword: the **last expression in the function body** is the return value, full stop.
-
-## Concepts Covered
-
-- `fn name(param: Type) -> ReturnType { ... }`
-- Expressions vs statements
-- Implicit return (no semicolon on the last line)
-- `std::io::stdin()` for keyboard input
-- `.parse()` and `.expect()` for converting strings to numbers
-- Building a useful program from small functions
-
-## Building Towards `music-theory-cli`
-
-The mini-project is a CLI tool that reads input and prints results. We'll start by writing a function that takes a MIDI note number and returns the corresponding frequency in Hz — your keyboard sends exactly these numbers when you press a key, so this is the literal foundation of the final-month synthesiser too.
+> **Stuck on a word?** Things like *iteration*, *swap*, *seed*, *deterministic* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-1/session-03/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-1/session-03/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session **sand will fall under gravity and pile up naturally** — drag the mouse, watch it pour, watch it settle into hills with a real angle of repose.
 
-### 1. Functions
+---
+
+## What you'll learn
+
+- Nested `for` loops over a 2D grid
+- Why traversal order matters: **bottom-to-top vs top-to-bottom** is the difference between sand falling and sand teleporting
+- How to swap two values in a `Vec` cleanly
+- Bringing in your first random-number library: `fastrand`
+- Why "small per-cell rules + a 60Hz loop" produces big emergent behaviour
+
+---
+
+## The big idea
+
+You're about to build a **cellular automaton**. That's the technical name for: a grid where every cell looks at its neighbours, applies a small fixed rule, and updates. Run that loop 60 times a second and the macroscopic behaviour — sand piling up at the right angle, water seeking its level, fire spreading — *emerges* from the tiny rules.
+
+Today's rule is two sentences:
+
+1. If the cell below a sand grain is empty, move down.
+2. If not, try diagonally down-left or down-right (pick at random).
+
+That's it. That's gravity *and* the angle of repose. The pile is not coded anywhere — it's what those two rules look like after a few seconds.
+
+---
+
+## Concepts covered
+
+- Nested `for` loops with a `.rev()` reverse-iteration trick
+- `Vec` mutation: `grid[a][b] = grid[c][d]` plus the cleaner `std::mem::swap`
+- `fastrand` crate, `cargo add fastrand`
+- `fastrand::bool()` to pick a direction
+- Why you separate **reading** from **writing** in a simulation step
+
+---
+
+## Building towards `sand-sim`
+
+This is the moment the project stops being "a paint program" and becomes "a simulation." Once gravity works, every later element (water, fire, lava, gunpowder) inherits the same architectural shape: each cell looks at its neighbours and decides whether to move or change. Session 5 reuses today's gravity rule and adds a sideways rule on top to make water. Session 11 inverts it (up instead of down) for fire. The skeleton is today's.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** You finished [Session 2](../session-02/README.md). Pressing `1`, `2`, `3` selects sand/water/stone; clicking draws the selected element in its own colour. The grid is `Vec<Vec<u8>>`.
+
+### 1. Add `fastrand` — 1 minute
+
+We need a coin flip to pick "fall left" vs "fall right" when a sand grain is blocked directly below. Rust's standard library doesn't include random numbers (it would mean dragging in cryptography). A tiny crate does the job:
+
+```bash
+cargo add fastrand
+```
+
+`Cargo.toml` now has:
+
+```toml
+[dependencies]
+macroquad = "0.4"
+fastrand = "2"
+```
+
+`fastrand` is **not cryptographically secure** — it's a fast, tiny pseudo-random generator perfect for simulations. (Crypto uses something else; we don't need it here.)
+
+### 2. Write the gravity step — 8 minutes
+
+Add a new function above `main`:
 
 ```rust
-fn add(a: i32, b: i32) -> i32 {
-    a + b
-}
+fn step(grid: &mut Vec<Vec<u8>>) {
+    // Iterate from the bottom row up. A sand grain at row R that
+    // falls to row R+1 must NOT be moved again on this same frame —
+    // and bottom-to-top traversal guarantees we visit R+1 BEFORE R.
+    for row in (0..ROWS - 1).rev() {
+        for col in 0..COLS {
+            if grid[row][col] != SAND {
+                continue;
+            }
 
-fn main() {
-    let sum = add(2, 3);
-    println!("2 + 3 = {}", sum);
-}
-```
+            // Try straight down first.
+            if grid[row + 1][col] == EMPTY {
+                grid[row + 1][col] = SAND;
+                grid[row][col]     = EMPTY;
+                continue;
+            }
 
-Look at `add`:
+            // Blocked directly below — try a diagonal.
+            // Pick left-first or right-first by coin flip so piles are symmetric.
+            let try_left_first = fastrand::bool();
+            let (a, b) = if try_left_first { (-1, 1) } else { (1, -1) };
 
-- `fn add` — declare a function called `add`
-- `(a: i32, b: i32)` — two parameters, both 32-bit signed integers (you must annotate parameter types)
-- `-> i32` — it returns an `i32`
-- `a + b` — the function body. **Note:** no semicolon, no `return` keyword. The last expression is the value.
-
-If you wrote `a + b;` (with a semicolon), the compiler would yell at you, because that turns the expression into a statement, and statements have no value:
-
-```
-error[E0308]: mismatched types
-expected `i32`, found `()`
-```
-
-`()` is the **unit type**, the equivalent of "nothing". A function that doesn't return anything implicitly returns `()`.
-
-### 2. Why no `return`?
-
-You *can* use `return`:
-
-```rust
-fn add(a: i32, b: i32) -> i32 {
-    return a + b;
-}
-```
-
-It works. But idiomatic Rust uses implicit return for the final expression because it composes much better in larger expressions:
-
-```rust
-fn classify(n: i32) -> &'static str {
-    if n > 0 {
-        "positive"
-    } else if n < 0 {
-        "negative"
-    } else {
-        "zero"
+            for dx in [a, b] {
+                let nc = col as i32 + dx;
+                if nc < 0 || nc >= COLS as i32 {
+                    continue;
+                }
+                let nc = nc as usize;
+                if grid[row + 1][nc] == EMPTY {
+                    grid[row + 1][nc] = SAND;
+                    grid[row][col]    = EMPTY;
+                    break;
+                }
+            }
+        }
     }
 }
 ```
 
-The whole `if`/`else if`/`else` chain is one expression. Each branch is one expression. The function body is one expression. No `return` anywhere.
-
-### 3. The frequency formula
-
-The frequency of MIDI note number `n` is:
-
-$$ f(n) = 440 \times 2^{(n - 69)/12} $$
-
-In Rust:
+Then, inside the `loop` in `main`, call it just before the drawing block:
 
 ```rust
-fn midi_to_frequency(note: u8) -> f64 {
-    440.0 * 2.0_f64.powf((note as f64 - 69.0) / 12.0)
-}
+        step(&mut grid);
 ```
 
-A few things to notice:
+Save. Run. **Click and hold to pour sand.** Watch it fall, hit the bottom, and start piling.
 
-- The parameter `note: u8` accepts any value 0–255 (and MIDI notes are 0–127, so it fits).
-- `note as f64` casts the byte to a float so the maths works.
-- `2.0_f64.powf(...)` says "raise 2.0 (as `f64`) to the power of ...".
+> **The Wow Moment.** Pour sand onto one spot for a few seconds. It piles up into a perfect cone with the natural slope of real sand. You did not code "the pile is a cone." You wrote two rules — "fall down, or try a diagonal if blocked" — and the cone *emerges*. **This is your first cellular automaton.** Send a screenshot to someone who knows nothing about programming. The reaction is uniformly "wait, how?"
 
-Sanity check: for `note = 69` (A4) we expect 440. For `note = 60` (middle C) we expect ~261.63.
+### 3. Why bottom-to-top? — read this, it matters
 
-### 4. Reading input
+If you wrote the outer loop as `for row in 0..ROWS - 1` (top-to-bottom), here's what would happen:
+
+1. Visit row 0. A sand grain falls to row 1.
+2. Visit row 1. **The same grain is now there.** It falls to row 2.
+3. Visit row 2. Same grain. Falls to row 3.
+4. ...continues all the way down in **a single frame**.
+
+Sand wouldn't fall. It would teleport. Every grain you place would hit the bottom instantly with no animation.
+
+`.rev()` flips the iterator order so we start at row 78 and work upward to row 0. By the time we look at row 5, rows 6, 7, 8, … have already been updated for this frame — and we won't re-touch them.
+
+**This is the kind of subtle algorithmic detail that makes you sound experienced.** It also generalises: any cellular automaton that involves *movement in a known direction* needs to iterate in the opposite direction. Fire rises — Session 11 will iterate top-to-bottom for fire.
+
+### 4. (Optional) Use `std::mem::swap` for clarity — 2 minutes
+
+The two lines `grid[row+1][col] = SAND; grid[row][col] = EMPTY;` are a swap. Rust's standard library has a function for that:
 
 ```rust
-use std::io;
-
-fn main() {
-    println!("Enter a MIDI note number (0-127):");
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
-
-    let note: u8 = input.trim().parse().expect("Please enter a number");
-    let freq = midi_to_frequency(note);
-    println!("MIDI {} = {:.2} Hz", note, freq);
-}
-
-fn midi_to_frequency(note: u8) -> f64 {
-    440.0 * 2.0_f64.powf((note as f64 - 69.0) / 12.0)
-}
+// Two simultaneous mutable borrows of `grid` need split_at_mut.
+let (top, bottom) = grid.split_at_mut(row + 1);
+std::mem::swap(&mut top[row][col], &mut bottom[0][col]);
 ```
 
-Step by step:
+For this session the assignment form is clearer; you'll see `swap` used more in Month 2. Mentioned here so it doesn't look mysterious later.
 
-- `use std::io;` — pulls the `io` module into scope so we can write `io::stdin()` instead of `std::io::stdin()`.
-- `String::new()` — an empty, growable string. We're going to append the user's typed line to it.
-- `read_line(&mut input)` — reads one line and writes it into `input`. The `&mut` means "I want to mutate `input` through this reference". (The borrow checker stuff is coming in Month 2.)
-- `.expect("...")` — the read might fail (rare, but possible). `.expect()` says "if it fails, crash with this message". For real programs we'd handle the error properly; for now it's fine.
-- `input.trim()` — strips the trailing newline.
-- `.parse()` — converts a `&str` to a number. The type Rust converts to is determined by the target type (`u8` here, on the left).
+### 5. (Optional) Vary the spread probability — 2 minutes
 
-### 5. Putting it together
+In real sand, grains don't always slide off a slope; sometimes they catch. Add a probability gate to the diagonal:
 
-The complete example is in `examples/midi_to_freq/`. Try a few values:
-
-```
-$ cargo run
-Enter a MIDI note number (0-127):
-69
-MIDI 69 = 440.00 Hz
-
-$ cargo run
-Enter a MIDI note number (0-127):
-60
-MIDI 60 = 261.63 Hz
+```rust
+            // Only try the diagonal 70% of the time. The rest of the time, sand stays.
+            if fastrand::f32() > 0.7 {
+                continue;
+            }
 ```
 
-That second one is **middle C**. You just wrote a real piece of audio engineering.
+Higher probability → flatter piles. Lower → steeper, more stubborn piles. Tweak it until the pile looks right to you.
 
 ---
 
-## Common Mistakes
+## Linux (Ubuntu) note
 
-### ❌ Forgetting `mut` on the input buffer
+`cargo add fastrand` only talks to crates.io over HTTPS — no system packages involved. It works identically on Ubuntu, macOS, and Windows.
 
-```rust
-let input = String::new();
-io::stdin().read_line(&mut input).expect("oops");   // 💥
+If you're behind a corporate proxy (e.g. a school or college network blocks crates.io), set `CARGO_HTTP_PROXY` in `~/.cargo/config.toml`:
+
+```toml
+[http]
+proxy = "http://proxy.example.org:8080"
 ```
 
-```
-error[E0596]: cannot borrow `input` as mutable, as it is not declared as mutable
-```
-
-**Fix:** `let mut input = String::new();`. `read_line` writes into the string, so it needs a mutable reference.
-
-### ❌ Adding a semicolon to the return expression
-
-```rust
-fn double(x: i32) -> i32 {
-    x * 2;       // 💥 returns () instead of i32
-}
-```
-
-**Fix:** drop the semicolon. (Or write `return x * 2;`.)
-
-### ❌ Forgetting to `.trim()` before parsing
-
-```rust
-let n: u8 = input.parse().expect("...");   // 💥 includes "\n"
-```
-
-The line read from stdin includes the trailing newline. **Fix:** `input.trim().parse()`.
-
-### ❌ Calling `parse()` without telling Rust what type
-
-```rust
-let n = input.trim().parse().expect("...");   // 💥
-```
-
-```
-error[E0282]: type annotations needed
-```
-
-`parse()` is generic — it can produce many types. **Fix:** annotate the variable: `let n: u8 = ...` or use the turbofish: `input.trim().parse::<u8>().expect(...)`.
+If the simulation feels sluggish, run `cargo run --release` — Linux release builds are typically the fastest of the three OSes, and the difference for a cellular automaton is dramatic.
 
 ---
 
-## Session Challenge
+## Common mistakes
 
-Extend `examples/midi_to_freq` so that it:
+### Sand teleports straight to the bottom in one frame
 
-1. Prompts repeatedly until the user types `quit`.
-2. Validates that the number is between 0 and 127, and prints a friendly error otherwise (don't crash).
-3. Bonus: print the **note name** alongside (`MIDI 60 = C4 = 261.63 Hz`). You'll need to map `note % 12` to a name. Try writing this with a `match` — that's exactly what we'll cover in Session 5.
+You wrote `for row in 0..ROWS - 1` without the `.rev()`. Top-to-bottom iteration means each falling grain gets updated repeatedly in the same frame. Add `.rev()` and it'll animate properly.
+
+### `error[E0502]: cannot borrow grid as mutable more than once at a time`
+
+Rust won't let you write `grid[row][col] = grid[row+1][col]` while *also* mutating both cells in the same expression. Split it into two assignments via a temporary:
+
+```rust
+let temp = grid[row + 1][col];
+grid[row + 1][col] = grid[row][col];
+grid[row][col] = temp;
+```
+
+Or use `std::mem::swap` with `split_at_mut` as shown above.
+
+### Sand falls right through stone walls
+
+You forgot to check `grid[row+1][col] == EMPTY` — you're moving sand into any non-sand cell, including stone. The whole condition is: move down **only if the cell below is empty**.
+
+### Sand always piles to the left (or always to the right)
+
+You're not coin-flipping the direction. Without `fastrand::bool()`, sand always tries left before right (or vice versa). That biases every pile to one side. Fix: pick the order randomly per cell.
+
+### Pile looks "blocky" — flat plateaus instead of a cone
+
+You're iterating `for col in 0..COLS` left-to-right every row. That introduces a left-bias even with the coin flip, because the grain that "wins" a diagonal slot is the leftmost one to ask. The fix that lands in Session 7 is to alternate column-order every frame. For now, the bias is fine.
+
+### Window freezes for a moment then catches up
+
+You set `CELL_SIZE` to something tiny (like `1.0` or `2.0`) and now you have a million cells. The simulation step is O(rows × cols) per frame. Up the cell size or shrink the grid. (You can also `cargo run --release` for a 5–10× speed boost — at the cost of a slower compile.)
 
 ---
 
-## Quick Reference
+## Session challenge
 
-| Concept | Syntax |
+Pick one — no solution provided.
+
+1. **Hold-to-pour acceleration.** While the mouse is held, increase the brush radius from 1 to 4 over a couple of seconds, so a steady press starts as a trickle and turns into a stream.
+2. **Stone vs sand collision.** Place a horizontal line of stone partway up the window. Pour sand on it. Right now sand piles cleanly on stone — verify it does. Now place a single-cell stone gap and watch sand find its way through.
+3. **Avalanche key.** Press `A` to set all sand cells to "loose" — for one frame, raise the spread probability to 1.0 so existing piles collapse and re-settle. (You'll need a transient state — easiest is a `let mut avalanche_frame = false;` and a check inside `step`.)
+4. **Frame counter and FPS print.** Every 60 frames, `println!("fps = {:.1}", get_fps());`. macroquad's `get_fps()` returns the current frame rate.
+
+---
+
+## Quick reference
+
+| What | Code |
 |---|---|
-| Define function | `fn name(p: T) -> R { body }` |
-| Implicit return | last expression, no `;` |
-| Explicit return | `return value;` |
-| No return value | `fn name() { ... }` (returns `()`) |
-| Power | `x.powf(y)` |
-| Cast | `x as T` |
-| Read line | `io::stdin().read_line(&mut s)` |
-| Parse | `s.trim().parse::<T>()` |
+| Add a crate | `cargo add fastrand` |
+| Random bool | `fastrand::bool()` |
+| Random f32 in 0..1 | `fastrand::f32()` |
+| Random int in range | `fastrand::i32(0..ROWS as i32)` |
+| Reverse a range | `for row in (0..ROWS).rev() { ... }` |
+| Swap two cells | `let t = a; a = b; b = t;` (or `std::mem::swap`) |
+| Skip remainder of loop iter | `continue;` |
+| Stop a loop early | `break;` |
+| FPS this frame | `get_fps()` |
 
 ---
 
-## Further Reading
+## DofE log reminder
 
-Curated extra material on the topics covered in this session (Functions, Expressions, I/O). All free; all current as of writing.
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 3**. The most useful things to note today:
 
-- [**The Rust Book** — *How Functions Work* (3.3)](https://doc.rust-lang.org/book/ch03-03-how-functions-work.html) — Includes the all-important *expressions vs statements* distinction.
-- [**The Rust Book** — *Programming a Guessing Game* (chapter 2)](https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html) — Builds the same kind of stdin-reading toy you wrote today, and adds error handling — well worth a look.
-- [**`std::io` documentation**](https://doc.rust-lang.org/std/io/) — The standard library's I/O primitives. Skim the *Read* and *BufRead* traits.
-- [**Rust by Example** — *Expressions*](https://doc.rust-lang.org/rust-by-example/expression.html) — Short and sharp; great refresher.
-
----
-
-## Stuck?
-
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
-
----
-## DofE Log Reminder
-
-> 📝 Session 3 done. Five minutes in [`dfe/session-log.md`](../../dfe/session-log.md). What's the most surprising thing about expressions vs statements?
+- Your own one-sentence explanation of why **bottom-to-top** iteration matters (this is the kind of subtlety that comes up in interviews and good answers earn nods)
+- The specific moment the sand-pile "looked right" — and what you tweaked to get it there

@@ -1,201 +1,313 @@
-# Session 15: Mini-Project Build Part 1 — World Core
+# Session 15 — Lava, Ice, and Chain Reactions
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-## What You'll Build
-
-The generation engine for `world-generator`. By the end of this session you'll have:
-
-- A working `Tile` enum and `World` struct
-- A deterministic hash function turning `(seed, x, y)` into a value in `[0, 1)`
-- A `World::generate(seed, width, height)` that fills a 2D grid
-
-You won't have rendering yet. That's Session 16.
-
-## Where to Work
-
-Open [`../project/world-generator/starter/`](../project/world-generator/starter/). The skeleton is laid out with `TODO` comments for Sessions 15 *and* 16. Today you tackle the Session 15 TODOs.
-
-A complete reference is in [`../project/world-generator/solution/`](../project/world-generator/solution/) — try first, peek if stuck.
+> **Stuck on a word?** Things like *chain reaction*, *temperature threshold*, *phase change*, *table-driven* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **Where to work today.** This is a project session, so you'll be inside the project folder, not the session folder. From a fresh terminal **at the root of the repo**, run:
+## The Goal
+
+By the end of this session your sandbox has **lava** (falling, hot, burns wood, solidifies on water contact) and **ice** (static, cold, melts to water near heat) — **each added in roughly six lines of table changes plus one tiny update function.** Drop lava onto a frozen lake and watch a multi-step chain reaction play out without you scripting any of it.
+
+---
+
+## What you'll learn
+
+- Adding non-trivial elements *without changing existing element code* — the test of a good architecture
+- Designing chain reactions: A becomes B, B reacts with C, C produces D — emergent narratives
+- Re-using `update_liquid` (or a generic liquid update) for lava without copy-paste
+- A `liquid_density` field on cells, or per-type density constants — letting lava sink through water
+- Why "no new code paths needed" is the real measure of yesterday's refactor
+
+---
+
+## The big idea
+
+Sessions 11–14 built the **machinery**. Today you reap the rewards: add two elements with three or four lines of code each, and the rest of the world *just works*. Lava reacts with water through the table. Lava cools through the existing temperature pass. Lava ignites wood through the same table entries fire uses, with different probabilities. Ice melts because of heat radiation — the *same* heat radiation that boils water.
+
+The most satisfying single moment of Month 2: when you realise you've made fire, water, oil, wood, smoke, steam, acid, lava, and ice — nine elements — interact pairwise in dozens of distinct ways, and almost all of it lives in one HashMap. **That is what good architecture buys you.**
+
+---
+
+## Concepts covered
+
+- Reusing `update_liquid` for lava (generic over type)
+- A `density()` method on `CellType` returning `u8` — heavier liquids sink
+- Per-type cool/heat constants instead of a single global
+- The reactions added today: lava+water, lava+wood, lava+ice, ice+fire, ice+lava, ice+water
+- The fact that **no existing reaction in `build_reactions` changes** — only additions
+
+---
+
+## Building towards `sand-sim`
+
+This is the last "new element" session of Month 2. Session 16 adds polish, audio, and the milestone reflection that ships v0.2. Month 3 reuses today's chain-reaction lessons for the recipe system (Session 19) — recipes are reactions tagged with "this should unlock a new selector entry."
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 14 finished. The `REACTIONS` HashMap and `react()` work. Acid corrodes; fire reacts via the table; eight elements exist (sand, water, stone, wood, fire, oil, oilfire, smoke, steam, acid).
+
+### 1. Add the two new variants — 2 minutes
+
+```rust
+enum CellType {
+    // ...
+    Lava,
+    Ice,
+}
+
+// colour:
+CellType::Lava => Color::new(1.00, 0.30, 0.05, 1.0),  // bright molten orange
+CellType::Ice  => Color::new(0.75, 0.90, 1.00, 0.85), // pale icy blue, slight transparency
+
+// selector:
+let elements = [Sand, Water, Stone, Wood, Fire, Oil, Acid, Lava, Ice];
+
+// keys:
+if is_key_pressed(KeyCode::Key8) { selected = CellType::Lava; }
+if is_key_pressed(KeyCode::Key9) { selected = CellType::Ice;  }
+```
+
+### 2. Lava is a hot liquid — 3 minutes
+
+Lava falls like water but is much hotter. The neat way: extend `update_liquid` from Session 14 to take a starting temperature:
+
+```rust
+fn update_liquid(grid: &mut Vec<Vec<Cell>>, row: usize, col: usize, my_type: CellType) {
+    // ... falling logic (water from Session 5 generalised) ...
+}
+```
+
+Lava also auto-radiates heat (like fire but without spreading):
+
+```rust
+fn update_lava(grid: &mut Vec<Vec<Cell>>, row: usize, col: usize) {
+    // Heat the four neighbours.
+    for (dr, dc) in NEIGHBOURS_4 {
+        let nr = row as i32 + dr;
+        let nc = col as i32 + dc;
+        if nr < 0 || nr >= ROWS as i32 || nc < 0 || nc >= COLS as i32 { continue; }
+        grid[nr as usize][nc as usize].heat(40.0);
+    }
+    // Then fall like a liquid.
+    update_liquid(grid, row, col, CellType::Lava);
+}
+```
+
+Dispatch:
+
+```rust
+match grid[row][col].cell_type {
+    CellType::Lava => update_lava(grid, row, col),
+    CellType::Water | CellType::Oil | CellType::Acid => update_liquid(grid, row, col, _ct),
+    // ...
+}
+```
+
+Set lava's initial temperature to a sensible value in `Cell::new`:
+
+```rust
+fn new(cell_type: CellType) -> Self {
+    let temperature = match cell_type {
+        CellType::Lava => 1200.0,
+        CellType::Ice  => -10.0,
+        _ => 20.0,
+    };
+    let lifetime = match cell_type {
+        CellType::Fire => 60,
+        _ => 0,
+    };
+    Cell { cell_type, temperature, lifetime }
+}
+```
+
+### 3. Lava reactions — three table rows — 3 minutes
+
+In `build_reactions`:
+
+```rust
+    // -- Lava reactions --
+    // Lava + Water = stone (lava cools and solidifies). Heat dumped to the water.
+    r.insert((Lava, Water), ReactionOutcome::replace_both(Stone, Steam,  60.0));
+    r.insert((Water, Lava), ReactionOutcome::replace_both(Steam, Stone,  60.0));
+
+    // Lava + Wood = lava + fire (lava ignites wood instantly).
+    r.insert((Lava, Wood), ReactionOutcome::replace_both(Lava, Fire, 100.0));
+    r.insert((Wood, Lava), ReactionOutcome::replace_both(Fire, Lava, 100.0));
+
+    // Lava + Ice = water + water (huge temperature differential cancels).
+    r.insert((Lava, Ice), ReactionOutcome::replace_both(Stone, Water, 200.0));
+    r.insert((Ice, Lava), ReactionOutcome::replace_both(Water, Stone, 200.0));
+```
+
+**Six lines, three reactions.** That's the whole of "lava's chemistry."
+
+### 4. Ice — one update function — 3 minutes
+
+Ice is static (doesn't move). It just melts when warm:
+
+```rust
+fn update_ice(grid: &mut Vec<Vec<Cell>>, row: usize, col: usize) {
+    if grid[row][col].temperature >= 0.0 {
+        grid[row][col] = Cell {
+            cell_type:   CellType::Water,
+            temperature: 5.0,    // melted-just-now water is cold
+            lifetime:    0,
+        };
+        return;
+    }
+    // Ice also cools its neighbours slightly (anti-heat).
+    for (dr, dc) in NEIGHBOURS_4 {
+        let nr = row as i32 + dr;
+        let nc = col as i32 + dc;
+        if nr < 0 || nr >= ROWS as i32 || nc < 0 || nc >= COLS as i32 { continue; }
+        let cell = &mut grid[nr as usize][nc as usize];
+        cell.temperature = (cell.temperature - 0.4).max(-50.0);
+    }
+}
+```
+
+Dispatch in the static pass:
+
+```rust
+match grid[row][col].cell_type {
+    CellType::Ice => update_ice(grid, row, col),
+    // ...
+}
+```
+
+Add ice reactions (for instant phase changes — heat radiation also melts ice slowly via the temperature check above):
+
+```rust
+    // -- Ice reactions --
+    // Ice + Fire = both die into water + smoke.
+    r.insert((Ice, Fire), ReactionOutcome::replace_both(Water, Smoke, -30.0));
+    r.insert((Fire, Ice), ReactionOutcome::replace_both(Smoke, Water, -30.0));
+
+    // Ice + Water = stays the same — nothing inserted (cold water just sits beside ice).
+```
+
+**Save. Run.**
+
+Build a stone basin. Fill it with water. Drop a single ice cube in: it floats, cools the water near it, just sits there. Now drop a lava cell on top of the ice: **steam bursts, stone forms, water condenses, surrounding ice melts from the heat differential.** Real cascade.
+
+> **The Wow Moment.** Make a "frozen lake" — a row of ice cells at the bottom of a stone bowl with a thin layer of water above them. Drop a single lava cell at the top. Watch:
 >
-> ```bash
-> cd month-2/project/world-generator/starter        # your work-in-progress
-> cargo run -- <args>
-> ```
+> 1. Lava falls through air, glowing.
+> 2. Hits the water — turns to **stone** with **steam** rising.
+> 3. The steam reaches ice — heat melts the ice into **water**.
+> 4. The new water mixes with the existing water — the temperature drops.
+> 5. Eventually the lake re-freezes (if you have a cool-pass enabled) or settles into stratified hot/cold layers.
 >
-> The reference implementation lives in `month-2/project/world-generator/solution/` — peek only when you're properly stuck. All `cargo run` commands shown below assume you're inside `month-2/project/world-generator/starter/`.
+> **You didn't script any of that.** Each step came from a single table entry plus the temperature field. *That* is what people mean when they say a simulator "comes alive."
 
-## Step-by-Step Walkthrough
+### 5. Optional: ice on water floats — 3 minutes
 
-### 1. The `Tile` enum
-
-Open `starter/src/main.rs`. Replace the placeholder `Tile`:
+Add a `density` method on `CellType`:
 
 ```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Tile {
-    Ocean,
-    Plains,
-    Forest,
-    Mountain,
-    Desert,
-}
-```
-
-Why those derives?
-
-- `Debug` — handy for `{:?}` while we're developing
-- `Clone, Copy` — `Tile` is just a tag with no data, so it's tiny and safe to copy implicitly
-- `PartialEq, Eq` — needed for `==` and to be a `HashMap` key
-- `Hash` — needed to be a `HashMap` key
-
-### 2. The `World` struct
-
-```rust
-struct World {
-    seed: u64,
-    width: usize,
-    height: usize,
-    grid: Vec<Vec<Tile>>,
-}
-```
-
-`Vec<Vec<Tile>>` — outer vec is rows (`y`), inner vec is columns (`x`). When we render we'll iterate rows top-to-bottom.
-
-### 3. The hash function — *understand* it, don't just copy
-
-It's already in your starter file, but let's read it:
-
-```rust
-fn hash(seed: u64, x: usize, y: usize) -> f64 {
-    let mut h = seed
-        .wrapping_mul(6364136223846793005)
-        .wrapping_add(x as u64)
-        .wrapping_mul(2891336453)
-        .wrapping_add(y as u64);
-    h ^= h >> 33;
-    h = h.wrapping_mul(0xff51afd7ed558ccd);
-    h ^= h >> 33;
-    (h as f64) / (u64::MAX as f64)
-}
-```
-
-What's going on?
-
-1. **Mix the inputs together** — combine `seed`, `x`, `y` into a single `u64` `h`. The big constants are large primes that ensure tiny changes ripple through all 64 bits. We use **`wrapping_mul`/`wrapping_add`** because we *want* overflow — it's part of how the mixing works (without `wrapping_*` Rust would panic in debug mode on integer overflow, which is normally a great safety feature but here we'd bypass it).
-2. **Avalanche** — `h ^= h >> 33;` shifts the top bits down and XORs them, mixing high and low halves. Repeat with another multiply to scramble further. This is the [SplitMix64](https://en.wikipedia.org/wiki/Xorshift) finaliser.
-3. **Convert to `[0, 1)`** — divide by `u64::MAX` as `f64`.
-
-The result: same input → same output every time (determinism), but tiny input changes produce wildly different outputs (good for noise). For *visual* generation this is fine. For cryptography it's not — never use this for passwords, security tokens, or anything that needs unpredictability.
-
-> **Maths moment:** This is essentially a hash function. A cryptographic hash (SHA-256) is more rigorous; this is a tiny, fast non-cryptographic one. The algorithm in your starter is from Sebastiano Vigna's *xoshiro* family; it's used in real game engines.
-
-### 4. The biome thresholds
-
-```rust
-fn tile_for(n: f64) -> Tile {
-    if n < 0.30      { Tile::Ocean }
-    else if n < 0.55 { Tile::Plains }
-    else if n < 0.78 { Tile::Forest }
-    else if n < 0.90 { Tile::Mountain }
-    else             { Tile::Desert }
-}
-```
-
-If `hash` is uniformly distributed in `[0, 1)` (which it basically is), this gives you:
-- 30% Ocean
-- 25% Plains
-- 23% Forest
-- 12% Mountain
-- 10% Desert
-
-Tweak the thresholds to taste — fewer mountains, more deserts, etc. Your call.
-
-### 5. `World::generate`
-
-```rust
-impl World {
-    fn generate(seed: u64, width: usize, height: usize) -> Self {
-        let mut grid: Vec<Vec<Tile>> = Vec::with_capacity(height);
-        for y in 0..height {
-            let mut row: Vec<Tile> = Vec::with_capacity(width);
-            for x in 0..width {
-                let n = hash(seed, x, y);
-                row.push(tile_for(n));
-            }
-            grid.push(row);
+impl CellType {
+    fn density(self) -> u8 {
+        match self {
+            CellType::Stone => 200,
+            CellType::Sand  => 160,
+            CellType::Lava  => 150,
+            CellType::Water => 100,
+            CellType::Acid  =>  95,
+            CellType::Oil   =>  60,
+            CellType::Ice   =>  40,        // ice floats on water — that's why!
+            _               =>   0,
         }
-        Self { seed, width, height, grid }
     }
 }
 ```
 
-Two nested loops, fills the grid. The `Vec::with_capacity` calls are a small optimisation — they pre-allocate so push doesn't have to keep resizing.
-
-### 6. Smoke test in `main`
-
-For now, just generate a small world and print debug output:
+In `update_liquid`, when blocked by a less-dense liquid, swap up:
 
 ```rust
-fn main() {
-    let world = World::generate(42, 8, 5);
-    for row in &world.grid {
-        println!("{:?}", row);
+    // Density-aware sink: if the cell below has a lower density and is a liquid, swap.
+    if row + 1 < ROWS {
+        let below_type = grid[row + 1][col].cell_type;
+        if matches!(below_type, CellType::Oil | CellType::Water | CellType::Acid)
+            && below_type.density() < my_type.density()
+        {
+            let me = grid[row][col];
+            grid[row][col]     = grid[row + 1][col];
+            grid[row + 1][col] = me;
+            return;
+        }
     }
-}
 ```
 
-You should see a grid of `Ocean / Plains / Forest / Mountain / Desert` debug output. **Run it twice** — same output. **Change the seed** — totally different output. **Same seed but bigger world** — first part is identical, new tiles fill the new area. Determinism in action.
+Now lava sinks through oil. Ice floats up through water (well, *would* — but ice is static). The principle is in place.
 
 ---
 
-## Common Mistakes
+## Linux (Ubuntu) note
 
-- **Forgetting `wrapping_mul`** — `u64 * u64` can overflow; without `wrapping_*` you get a panic in debug mode.
-- **Mixing up `x` and `y`** — `grid[y][x]` not `grid[x][y]`. Outer vec = rows.
-- **Building the grid then trying to mutate `Tile` later** — `Tile` is `Copy`, so you can replace whole tiles freely; but if you forgot `Copy`, the borrow checker will complain.
-- **Calling `World::generate` with `width = 0`** — the result is technically valid but useless. We'll add range checks in Session 16.
+Nothing OS-specific this session. The same `cargo run --release` story; the same `perf` profiling guidance from Session 12. One Ubuntu-relevant tip:
 
----
+- The hot-pink lava colour might look slightly washed out on certain Wayland compositors with `Night Light` enabled (Ubuntu's blue-light filter). If your lava looks orange instead of red-orange, check *Settings → Displays → Night Light* and toggle it off temporarily — your colours are correct, the compositor is filtering.
 
-## Session Challenge
-
-Once your generator works:
-
-1. Print the same world twice. Confirm identical output.
-2. Now print seeds 1, 2, 3 side by side. Confirm they look totally different.
-3. Try `width = 200, height = 60`. Notice it's still instantaneous — Rust is fast.
+Also worth noting on Ubuntu specifically: `cargo build --release` for this session takes 30–60 seconds on a typical laptop the first time after a clean. Subsequent incremental builds are 1–3 seconds. The first build is slow because LTO has to re-link all of `macroquad` plus your now-larger codebase. Normal.
 
 ---
 
-## Further Reading
+## Common mistakes
 
-Curated extra material on the topics covered in this session (Project — World Core (part 1)). All free; all current as of writing.
+### Lava falls straight through water without reacting
 
-- [**Red Blob Games — *Making maps with noise functions***](https://www.redblobgames.com/maps/terrain-from-noise/) — The single best web tutorial on procedural terrain. Pictures everywhere; language-agnostic.
-- [**RogueBasin — *Cellular Automata Method for Generating Random Cave-Like Levels***](https://roguebasin.com/index.php/Cellular_Automata_Method_for_Generating_Random_Cave-Like_Levels) — The classic 'random + smoothing passes = caves' algorithm we're inspired by.
-- [**`rand` crate documentation**](https://docs.rs/rand/latest/rand/) — Rust's standard random library. Read the *Quick Start* page first.
-- [**Notch's blog — *Terrain generation, part 1***](https://notch.tumblr.com/post/3746989361/terrain-generation-part-1) — Minecraft's creator describing how Minecraft's terrain works. Exactly the lineage of what you're building.
+You put `update_lava` in the wrong iteration pass. Falling liquids need bottom-to-top iteration. Reactions need their own pass (the reaction pass runs before movement). If lava is updated *after* the reaction pass and falls right through, reactions don't get triggered. Make sure the order is: reactions → top-to-bottom rising → bottom-to-top falling.
+
+### Lava produces stone *and* steam, but the stone is wrong
+
+You inserted `(Lava, Water)` and `(Water, Lava)` with *different* outcomes by mistake. Reactions should be symmetric — the source/target order in the key is the only difference, but the chemistry is the same. Double-check both rows produce stone-and-steam.
+
+### Ice instantly melts on placement
+
+Your default `Cell::new(Ice)` sets temperature to 20.0 (default). Add the special case in `Cell::new` (step 2 above). Ice should spawn at -10°C or colder.
+
+### Ice never melts even next to fire
+
+The fire's heat radiation isn't reaching ice. Check that `update_fire`'s `FIRE_HEAT_RADIATE` (Session 11) actually adds heat to ice cells, and that `update_ice`'s threshold (`temperature >= 0.0`) is correct.
+
+### `error[E0277]: 'CellType' doesn't implement 'Copy'` after adding density()
+
+Adding methods doesn't remove `Copy`. Check that no variant's payload is non-`Copy`. (Most likely: you accidentally typed `CellType::Wood(String)` for some reason. Stick with `u8`/`f32` payloads.)
+
+### `update_liquid` panics with index out of bounds on lava
+
+The density-swap step doesn't check `row + 1 < ROWS` before swapping. Add the guard.
 
 ---
 
-## Stuck?
+## Session challenge
 
-You're not the first. Three places that work when you're properly stuck:
+Pick one — no solution provided.
 
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+1. **Snow.** Add a `CellType::Snow` variant — a slow-falling, cold solid that melts to water. Snow + heat → water. Snow + Snow stacks (like sand, but loose).
+2. **Geothermal vent.** A persistent lava-producer cell (`CellType::LavaSource`) that, every 30 frames, spawns a lava cell in the cell directly above it if empty. Drop a few of these on a map and you get an unending lava flow you can dam.
+3. **Glass from sand + lava.** Add `(Sand, Lava) → (Glass, Lava)` (Glass is Session 21 — preview now). Lava walking over sand fuses it.
+4. **A reactions-list pretty printer.** Press `R` to dump the current reaction table to the terminal in tabular form (`SRC + TGT -> NEW_SRC + NEW_TGT | heat | prob`). Excellent for debugging additions.
 
 ---
-## DofE Log Reminder
 
-Row 15. Project session — note in your log what you got working ("World generation engine, deterministic, ASCII-debug output").
+## Quick reference
+
+| What | Code |
+|---|---|
+| Density per type | `fn density(self) -> u8 { match self { ... } }` |
+| Density swap | `if below.density() < my.density() && below.is_liquid() { swap }` |
+| Per-type spawn temp | `match type { Lava => 1200.0, Ice => -10.0, _ => 20.0 }` |
+| Static melt threshold | `if cell.temperature >= 0.0 { become water }` |
+| Add a reaction | `r.insert((A, B), ReactionOutcome::replace_both(C, D, heat));` |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 15**. Worth recording:
+
+- The frozen-lake chain reaction from step 4 — a short clip is gold
+- A sentence in your own words on "the test of a good architecture is *adding* code, not *changing* it" — this is the moment that lesson lands

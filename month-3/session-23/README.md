@@ -1,277 +1,374 @@
-# Session 23 — Live MIDI: `midir`, `cpal`, and Threads with `mpsc`
+# Session 23 — Polish and Secrets
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-> *"This week the program plays in real time. Press a key on a real MIDI keyboard, hear it through real speakers. Welcome to systems programming."*
-
-> ### 🅰️🅱️ Choose your track for today
->
-> This session is the most demanding in Month 3 — multi-threading, real-time audio, cross-platform USB device code. **You may not have a MIDI keyboard, or your platform's audio stack may make `cpal` painful.** That's normal; here are two routes through.
->
-> **Track A — live MIDI (the original path).**
-> Real keyboard or virtual keyboard → `midir` → channel → `cpal` audio thread → speakers. Continue reading below. *Pre-flight:* make sure `cargo run -- --note 69 --duration 1 --waveform sine` produces a `.wav` you can hear (i.e. the basic project still builds).
->
-> **Track B — render a chord progression to WAV.**
-> Skip the threading, skip the hardware. Type a progression on the command line: `"Cmaj:2 Fmaj:2 Gmaj:2 Cmaj:2"`. Each chord is multiple notes sounding *simultaneously* — additive mixing — so you still meet the core "many voices, one buffer" idea behind a polyphonic synth, just without the real-time constraints. The example is in [`examples/track_b_progression/`](./examples/track_b_progression/) and it's a working program. **If you take this track, the `midir`/`cpal`/threads walkthrough below doesn't apply to you — jump straight to "Track B walkthrough" further down.**
->
-> Both tracks count for the same DofE evidence. Session 24's `--chord` mode works on both tracks because session 24 stays offline. Note your choice (A or B) in your session log.
-
-## What You'll Learn
-
-- Cross-platform live MIDI input with [`midir`](https://docs.rs/midir).
-- Cross-platform audio output with [`cpal`](https://docs.rs/cpal).
-- Multi-threading with `std::sync::mpsc` channels — the producer/consumer pattern.
-- Why audio callbacks must be **lock-light and allocation-free**.
-
-## The Big Idea
-
-There are three threads in a live synth:
-
-```
-   ┌──────────────┐  NoteOn/Off  ┌──────────────┐
-   │ MIDI thread  ├─────────────→│  mpsc::tx    │
-   └──────────────┘              └─────┬────────┘
-                                       │
-                                       ▼
-   ┌──────────────┐  fill samples ┌──────────────┐
-   │ Audio thread │←──────────────│   rx + voices│
-   └──────────────┘               └──────────────┘
-```
-
-The MIDI thread fires whenever your keyboard sends a byte. The audio thread fires every few milliseconds asking for more samples. They talk through a channel.
-
-If the audio thread blocks for more than a few ms, the speaker glitches. So no `println!`, no `Mutex` contention, no allocation in the hot path. (We *do* take a `Mutex` here — but very briefly. For a real product you'd use a lock-free ring buffer.)
-
-## Concepts Covered
-
-- `midir::MidiInput`, ports, `connect()` callback.
-- `cpal::Host → Device → Stream` pattern.
-- `std::sync::mpsc::channel()` for thread-safe message passing.
-- `Arc<Mutex<Vec<Voice>>>` shared between callbacks (the *only* shared state).
-- Why the audio callback **must not** allocate or block (real-time constraint).
-
-## Building Towards `midi-synth`
-
-You'll implement `live.rs` and add a `--live` flag. After today:
-
-```bash
-cargo run -- --live --waveform sawtooth
-```
-
-…starts listening. Plug in a USB MIDI keyboard (even a cheap £30 one), press keys, hear sound.
-
-> 💡 **No keyboard?** Free virtual MIDI keyboards exist for every OS:
-> - macOS: built-in via Audio MIDI Setup → "IAC Driver" + a free app like **VMPK**
-> - Windows: **loopMIDI** + **VMPK**
-> - Linux: `aconnect` + **vkeybd**
-
-> 💡 **Where to work today.** This is a project session, so you'll be inside the project folder, not the session folder. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-3/project/midi-synth/starter        # your work-in-progress
-> cargo run -- <args>
-> ```
->
-> The reference implementation lives in `month-3/project/midi-synth/solution/` — peek only when you're properly stuck. All `cargo run` commands shown below assume you're inside `month-3/project/midi-synth/starter/`.
-
-## Step-by-Step Walkthrough
-
-### 1. Open MIDI input
-
-```rust
-let mut midi_in = MidiInput::new("midi-synth")?;
-midi_in.ignore(Ignore::None);
-let ports = midi_in.ports();
-let port = &ports[0];      // first port — list and pick if multiple
-```
-
-### 2. Make a channel
-
-```rust
-let (tx, rx) = mpsc::channel::<NoteEvent>();
-```
-
-The `tx` is `Send` and `Clone` — perfect for moving into the MIDI callback.
-
-### 3. Connect with a callback
-
-```rust
-let _conn = midi_in.connect(port, "midi-synth-port",
-    move |_stamp, message, _| {
-        if message.len() < 3 { return; }
-        let status = message[0] & 0xF0;
-        let (note, vel) = (message[1], message[2]);
-        match status {
-            0x90 if vel > 0 => { let _ = tx.send(NoteEvent::On  { note, velocity: vel }); }
-            0x80 | 0x90     => { let _ = tx.send(NoteEvent::Off { note }); }
-            _ => {}
-        }
-    },
-    (),
-)?;
-```
-
-> **Why the underscore on `_conn`?** If we drop the connection, the callback stops. Binding it keeps it alive for the lifetime of `main`. Don't shadow it.
-
-### 4. Open audio output
-
-```rust
-let host = cpal::default_host();
-let device = host.default_output_device().ok_or("no output device")?;
-let config = device.default_output_config()?;
-let sample_rate = config.sample_rate().0;
-let channels = config.channels() as usize;
-```
-
-### 5. Build the stream
-
-The `data` callback runs on the audio thread. It receives a `&mut [f32]` slice of length `frames * channels` and you must fill it.
-
-```rust
-let stream = device.build_output_stream(
-    &config.into(),
-    move |data: &mut [f32], _| {
-        // Drain MIDI events into the voice list.
-        while let Ok(ev) = rx.try_recv() { /* push or release Voice */ }
-        // Fill samples.
-        for frame in data.chunks_mut(channels) {
-            let mut s = 0.0;
-            for v in voices.iter_mut() { s += v.next_sample(); }
-            for sample in frame { *sample = s.clamp(-1.0, 1.0); }
-        }
-        voices.retain(|v| !v.done());
-    },
-    |err| eprintln!("stream error: {}", err),
-    None,
-)?;
-stream.play()?;
-```
-
-### 6. Sleep forever
-
-```rust
-loop { std::thread::sleep(Duration::from_secs(60)); }
-```
-
-`Ctrl-C` to stop.
-
-## Track B walkthrough — chord progressions to WAV
-
-Skip this section if you took Track A. If you took Track B, this is the whole session.
-
-### 1. Run the example as-is
-
-```bash
-cd month-3/session-23/examples/track_b_progression
-cargo run -- "Cmaj:2 Fmaj:2 Gmaj:2 Cmaj:2" cadence.wav
-```
-
-You'll get `cadence.wav` — the I–IV–V–I progression in C major, played on a sine wave. That's a real cadence; you'll recognise it from countless songs.
-
-### 2. Read the code (about 200 lines, single file)
-
-Open `examples/track_b_progression/src/main.rs`. The six sections are signposted with comment dividers:
-
-1. **Note-letter parsing** — `"C#"` → semitone offset 1.
-2. **Chord parsing** — `"Cmaj"` → `[60, 64, 67]` (C, E, G as MIDI numbers).
-3. **`midi_to_freq` and `render_note`** — same as Track B for Session 22.
-4. **`mix_into` (additive mixing)** — *this is the new bit*. Two notes that sound at the same time get their samples summed.
-5. **`render_progression`** — for each chord, render every voice and mix them all into the same time slot. Then advance the cursor and do the next chord.
-6. **`normalise`** — when 4 voices play together, the peak amplitude can hit 4.0. We scale the whole buffer down to ±0.99 so it doesn't clip when written as 16-bit PCM.
-
-### 3. Run the tests
-
-```bash
-cargo test
-```
-
-Six tests — they cover chord-name parsing and additive mixing.
-
-### 4. Modify it: write your own progression
-
-Famous progressions to try (all four chords last 2 seconds):
-
-- **The pop progression (vi–IV–I–V):** `"Am:2 F:2 C:2 G:2"` — Don't Stop Believin', Let It Be, hundreds more.
-- **The classic cadence (I–IV–V–I):** `"Cmaj:2 Fmaj:2 Gmaj:2 Cmaj:2"` — every hymn ever.
-- **The ii–V–I (jazz):** `"Dm7:2 G7:2 Cmaj7:2"` — about 80% of a jazz standard.
-- **12-bar blues in C:** `"Cmaj:2 Cmaj:2 Cmaj:2 Cmaj:2 Fmaj:2 Fmaj:2 Cmaj:2 Cmaj:2 G7:2 Fmaj:2 Cmaj:2 G7:2"`
-
-Render at least two. Listen back and notice how each progression has a different *mood* despite using the same three- or four-note building blocks.
-
-### 5. (Optional) Bring it back into the project
-
-If you finish early, port the `parse_progression` function and a `--progression` flag into the main `midi-synth` project's `main.rs`. The mixing/normalisation infrastructure is already there in `synth.rs`. This is a real, useful, ~30-line addition that demonstrates you can read existing code and extend it — exactly what the assessor's looking for.
-
-## Common Mistakes
-
-**Track A:**
-
-- **No sound, no error**: your default device might be muted, or `cpal` picked the wrong one. Print `device.name()`.
-- **Sound stutters / pops**: you're doing too much work in the audio callback. No I/O, no allocation, no `println!`.
-- **Stuck notes**: forgot to handle the velocity-0 NoteOn → NoteOff case. Same as session 22.
-- **Build fails on Linux**: `sudo apt install libasound2-dev pkg-config`.
-
-**Track B:**
-
-- **Output sounds way too quiet**: you forgot to call `normalise()` after mixing — but the *opposite* (forgetting to normalise so it clips) is also possible. Listen and check.
-- **`Cb` parses as a flat instead of a B**: edge case in `parse_note_letter`. The example handles it, but if you write your own parser, watch for it.
-- **Chord sounds dissonant**: double-check your interval pattern. `[0, 4, 7]` = major; `[0, 3, 7]` = minor; mixing them up is a one-character mistake with a very audible result.
-
-## Session Challenge
-
-**Track A:**
-
-1. Add a `--port N` flag to pick which MIDI input port to use.
-2. Print every received MIDI byte to a *separate* logging thread (use a second channel — never print from the audio callback).
-3. Make the synth respond to MIDI Control Change CC74 (filter cutoff) by changing the waveform on-the-fly.
-
-**Track B:**
-
-1. Add a `--bpm N` flag and treat each chord's duration as **beats** rather than seconds.
-2. Add a `--waveform` flag and switch between sine, square, triangle, sawtooth.
-3. Compose a 16-chord progression that goes somewhere musically interesting (modulate to another key in the middle, perhaps).
-
-## Quick Reference
-
-```rust
-// MIDI status bytes:
-0x80 = NoteOff (channel low nibble)
-0x90 = NoteOn  (vel > 0); NoteOn vel=0 == NoteOff
-0xB0 = ControlChange
-0xE0 = PitchBend
-
-// cpal sample formats:
-SampleFormat::F32 | SampleFormat::I16 | SampleFormat::U16
-// You handled F32; add the others if your device requires them.
-```
-
-## Further Reading
-
-Curated extra material on the topics covered in this session (Live MIDI — `midir`, `cpal`, threads & `mpsc`). All free; all current as of writing.
-
-- [**The Rust Book** — *Fearless Concurrency* (chapter 16)](https://doc.rust-lang.org/book/ch16-00-concurrency.html) — Threads, channels (`mpsc`), shared state. The session's foundation.
-- [**`std::sync::mpsc` documentation**](https://doc.rust-lang.org/std/sync/mpsc/) — The standard-library channel we're using. Note: there's also `crossbeam-channel` if you ever want more performance.
-- [**`midir` crate documentation**](https://docs.rs/midir/latest/midir/) — Cross-platform MIDI input library.
-- [**`cpal` crate documentation**](https://docs.rs/cpal/latest/cpal/) — Cross-platform audio output library. Read the *Getting Started* section.
-- [**Mara Bos — *Rust Atomics and Locks* (free book)**](https://marabos.nl/atomics/) — If concurrency clicks for you, this is the next book. Free online; ~150 pages of dense gold.
+> **Stuck on a word?** Things like *state machine*, *enum-with-data*, *easter egg*, *hidden recipe* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-## Stuck?
+## The Goal
 
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+By the end of this session your sim has a **title screen**, a **state machine** (`enum GameState { Title, Playing, Codex, Paused }`) that drives the whole loop, three **hidden recipes** that aren't listed anywhere, and at least one **easter egg** keystroke that does something delightful. Everything stays clean — the state machine *reduces* the amount of code in `main.rs`, not bloats it.
 
 ---
-## DofE Log Reminder
 
-Open `dfe/session-log.md`, find row 23, and write 1–3 sentences about what you built. **Note which track you took (A or B)**. Track A: what was the hardest part of the threading model? Did you see a "stuck note" bug? How did you fix it? Track B: which progression sounded the most "musical" to you, and why do you think that is?
+## What you'll learn
+
+- `enum GameState` as a top-level state machine
+- Transitioning states with `match` — the safe, total replacement for `if`-tree dispatch
+- "Modes" — when different keys mean different things depending on which state you're in
+- Hidden recipes — easter-egg gameplay
+- The "polish polish polish" discipline: tightening details no one will *consciously* notice but everyone will *feel*
+
+---
+
+## The big idea
+
+Right now `main.rs`'s loop is "always rendering, always stepping, plus a TAB-toggle for the codex." That works for one mode. It doesn't scale to "title screen, then playing, with optional pause overlay or codex overlay."
+
+A **state machine** is one enum and one `match`. Each state knows what input keys mean, what gets rendered, and what gets updated. Transitioning is one line. It's the simplest fix for "this is becoming a tangle of booleans" — and the moment you reach for it is the moment your code goes from hobbyist to professional.
+
+Hidden recipes are the *gameplay* polish. The codex doesn't show them. The player only finds them by accidental experimentation — that "oh!" moment is why people play discovery games until 4am.
+
+---
+
+## Concepts covered
+
+- `enum GameState` with no fields (pure-marker variants)
+- `match state { ... }` exhaustive dispatch
+- A pattern: `state = match state { ... }` to atomically transition
+- Conditional rendering: each state has its own render block
+- Hidden recipes that don't appear in `build_recipes` but in a separate `build_secret_recipes`
+
+---
+
+## Building towards `sand-sim`
+
+This is the last "new feature" session. Session 24 is the milestone — write the README, the retrospective, tag v1.0, push. Everything from today flows into the v1.0 demo: title screen on launch, polished interactions, hidden delights for the keen player.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 22 finished. Concrete and iron work. The element count is up around fifteen.
+
+### 1. The state enum — 2 minutes
+
+In `main.rs`:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GameState {
+    Title,
+    Playing,
+    Codex,
+    Paused,
+}
+```
+
+No payloads. Pure marker enum.
+
+### 2. The state machine in main — 8 minutes
+
+Replace the existing loop:
+
+```rust
+let mut state = GameState::Title;
+
+loop {
+    state = match state {
+        GameState::Title => {
+            render_title();
+            if is_key_pressed(KeyCode::Enter) {
+                GameState::Playing
+            } else if is_key_pressed(KeyCode::L) {
+                if let Ok(loaded) = persist::load("save.json") {
+                    grid = loaded;
+                    GameState::Playing
+                } else {
+                    eprintln!("No save found");
+                    GameState::Title
+                }
+            } else {
+                GameState::Title
+            }
+        }
+        GameState::Playing => {
+            ui::handle_input(&mut grid, &mut selected, &mut brush_radius);
+            step(&mut grid);
+            audio.tick();
+            let counts = count_cells(&grid);
+            audio.trigger(&counts, /* ... */);
+            check_recipes(&grid, &mut discoveries);
+
+            clear_background(BLACK);
+            render_grid(&grid, heatmap);
+            draw_selector(selected, brush_radius, &discoveries);
+            draw_legend();
+            draw_hud(&counts);
+
+            if is_key_pressed(KeyCode::Tab)   { GameState::Codex  }
+            else if is_key_pressed(KeyCode::Space) { GameState::Paused }
+            else { GameState::Playing }
+        }
+        GameState::Codex => {
+            // Sim is frozen; codex on top of the last frame.
+            // Don't step; just re-render last grid + codex overlay.
+            clear_background(BLACK);
+            render_grid(&grid, heatmap);
+            codex::draw_codex(&discoveries);
+
+            if is_key_pressed(KeyCode::Tab) || is_key_pressed(KeyCode::Escape) {
+                GameState::Playing
+            } else {
+                GameState::Codex
+            }
+        }
+        GameState::Paused => {
+            // Sim frozen; brief pause banner.
+            clear_background(BLACK);
+            render_grid(&grid, heatmap);
+            draw_pause_banner();
+
+            if is_key_pressed(KeyCode::Space) || is_key_pressed(KeyCode::Escape) {
+                GameState::Playing
+            } else {
+                GameState::Paused
+            }
+        }
+    };
+    next_frame().await;
+}
+```
+
+The `state = match state { ... }` shape is the clean transition idiom. Each arm returns the *next* state. Adding a new state (e.g. `Settings`) is one new variant + one new arm.
+
+### 3. The title screen — 5 minutes
+
+```rust
+fn render_title() {
+    clear_background(BLACK);
+    let title = "sand-sim";
+    let subtitle = "a Rust-powered physics sandbox";
+    let prompt = "press ENTER to begin   |   L to load   |   ESC to quit";
+
+    let tdim = measure_text(title, None, 96, 1.0);
+    let sdim = measure_text(subtitle, None, 24, 1.0);
+    let pdim = measure_text(prompt, None, 18, 1.0);
+
+    draw_text(title, (screen_width() - tdim.width) / 2.0,
+              screen_height() / 2.0 - 60.0, 96.0, Color::new(0.95, 0.80, 0.30, 1.0));
+    draw_text(subtitle, (screen_width() - sdim.width) / 2.0,
+              screen_height() / 2.0, 24.0, LIGHTGRAY);
+
+    // Pulse the prompt so it's noticed.
+    let alpha = ((get_time() * 2.0).sin() * 0.3 + 0.7) as f32;
+    draw_text(prompt, (screen_width() - pdim.width) / 2.0,
+              screen_height() / 2.0 + 80.0, 18.0,
+              Color::new(1.0, 1.0, 1.0, alpha));
+
+    // Bonus: drift falling sand in the background as eye candy.
+    title_screen_idle_particles();
+}
+
+fn title_screen_idle_particles() {
+    // Procedurally drift some sand-coloured pixels down the screen using
+    // get_time() as a phase. Doesn't need to be physically correct — purely visual.
+    for i in 0..40 {
+        let phase = (get_time() as f32 * 0.5 + i as f32 * 0.37) % 1.0;
+        let x = (i as f32 * 197.0) % screen_width();
+        let y = phase * screen_height();
+        draw_rectangle(x, y, 3.0, 3.0, Color::new(0.93, 0.80, 0.50, 0.6));
+    }
+}
+```
+
+The drifting sand-coloured pixels are a five-line eye-candy effect that turns a static splash into a living screen. Demos love it.
+
+### 4. The pause banner — 1 minute
+
+```rust
+fn draw_pause_banner() {
+    draw_rectangle(0.0, 0.0, screen_width(), screen_height(), Color::new(0.0, 0.0, 0.0, 0.35));
+    let text = "PAUSED — press SPACE to resume";
+    let dim = measure_text(text, None, 32, 1.0);
+    draw_text(text, (screen_width() - dim.width) / 2.0,
+              screen_height() / 2.0, 32.0, WHITE);
+}
+```
+
+### 5. Three hidden recipes — 6 minutes
+
+In `recipes.rs`, add a second builder:
+
+```rust
+pub fn build_secret_recipes() -> Vec<Recipe> {
+    let mut s: Vec<Recipe> = Vec::new();
+
+    // Secret 1: Mud — wet sand. Place water on sand.
+    s.push(Recipe {
+        name: "Mud",
+        unlocks: CellType::Mud,
+        predicate: Box::new(|grid| {
+            adjacent_pair(grid, CellType::Sand, CellType::Water)
+        }),
+    });
+
+    // Secret 2: Ash — what's left after a *lot* of wood burns.
+    // (Tracked by recipe condition: smoke cell at the top of the grid + no live fire.)
+    s.push(Recipe {
+        name: "Ash",
+        unlocks: CellType::Ash,
+        predicate: Box::new(|grid| {
+            grid[0].iter().any(|c| matches!(c.cell_type, CellType::Smoke))
+                && grid.iter().flat_map(|r| r.iter())
+                    .filter(|c| matches!(c.cell_type, CellType::Fire | CellType::OilFire))
+                    .count() == 0
+        }),
+    });
+
+    // Secret 3: Pure carbon — diamond-like, decorative. Triggered by oil + extreme heat.
+    s.push(Recipe {
+        name: "Carbon",
+        unlocks: CellType::Carbon,
+        predicate: Box::new(|grid| {
+            cells_match(grid, |c| matches!(c.cell_type, CellType::Oil) && c.temperature > 1800.0)
+        }),
+    });
+
+    s
+}
+```
+
+(Add `CellType::Mud`, `CellType::Ash`, `CellType::Carbon` variants with their own colours. Behaviour can be minimal — mud falls like wet sand, ash is static and fades, carbon is shiny and static.)
+
+The trick: **`build_secret_recipes` is called and its results merged into the active recipe list, but `catalogue()` (the codex) does not list these elements.** The codex shows them only once they're discovered.
+
+```rust
+let mut recipes = build_recipes();
+recipes.extend(build_secret_recipes());
+```
+
+In `codex.rs`:
+
+```rust
+let visible_entries: Vec<&ElementEntry> = catalogue().iter()
+    .filter(|e| discoveries.is_unlocked(e.cell_type()) || known_via_catalogue(e.cell_type()))
+    .collect();
+```
+
+(Add a helper that hides secret elements from the codex until discovered. Or always show all entries, and let the unfilled silhouette reveal that a secret exists. Designer's choice.)
+
+### 6. An easter egg — 3 minutes
+
+The hidden "press K-O-N-A-M-I-up-up..." sequence is the classic. Simpler: a single weird key combo.
+
+```rust
+let mut konami_index = 0;
+let konami_sequence = [KeyCode::R, KeyCode::U, KeyCode::S, KeyCode::T];
+
+// In handle_input:
+for k in &konami_sequence {
+    if is_key_pressed(*k) {
+        if *k == konami_sequence[konami_index] {
+            konami_index += 1;
+            if konami_index == konami_sequence.len() {
+                trigger_easter_egg();
+                konami_index = 0;
+            }
+            break;
+        } else {
+            konami_index = 0;
+            break;
+        }
+    }
+}
+
+fn trigger_easter_egg() {
+    println!("\n  ((  Crab mode activated.  ))\n");
+    // Plant a single special cell type, or unlock all secrets, or
+    // flip the colour palette to sepia for 10 seconds. Pick one.
+}
+```
+
+The egg can be anything. The point is: **someone keen will find it and feel smart**. Reward curiosity.
+
+**Save. Run.** The title screen greets you. Press Enter. The sim runs. Press Space — paused. Space again — resumed. Tab — codex. Tab — back. Now type r-u-s-t at the keyboard — easter egg fires.
+
+> **The Wow Moment.** Open the codex when fresh. It shows mostly silhouettes. Now play normally — discover the listed recipes. Open the codex again: most are colour. Now wander: place sand, drop water on it. **Mud unlocks.** It wasn't in the codex hint list at all. **Your sim now has secrets.** Some players will play for an hour and find them all. Some will play for ten hours and miss them. *Both feel proud.* That is what a *finished* discovery game does.
+
+---
+
+## Linux (Ubuntu) note
+
+The state machine itself is pure-language; no OS impact. The easter egg might be:
+
+- **Keyboard layout sensitivity.** R-U-S-T as keys is always on US/UK QWERTY. If the player has a non-Latin layout (AZERTY, Dvorak, Russian), the *physical keys* still register the same `KeyCode::R` because macroquad uses physical key codes, not interpreted characters. Your secret works regardless of layout.
+
+- **Title screen idle-particle CPU.** 40 small rectangles drawn per frame is negligible. But if you ever bump that to 4000, expect CPU usage to climb on Ubuntu laptops on battery. Use `get_fps()` to verify; cap with a `match`-on-FPS.
+
+- **Pause memory.** While paused, your sim isn't calling `step` but is still rendering the static last frame at 60 FPS. CPU sits at near-zero except for the screen redraw. To go further (true low-power pause), wrap `next_frame()` with `tokio::time::sleep(Duration::from_millis(33))` while paused — drops to 30 FPS, saves ~50% CPU. Overkill for a 30-minute play session; mentioned for completeness.
+
+- **Wayland focus behaviour.** When your sim loses focus on Ubuntu Wayland (you alt-tab to another window), macroquad continues to render but key events stop firing. So you can't "pause" by alt-tabbing. Either gate `step` on `window_focused()` (macroquad exposes this) or accept it. The latter is fine; mention in the README.
+
+---
+
+## Common mistakes
+
+### `error: non-exhaustive patterns` after adding a state
+
+Rust forces you to handle every variant in `match`. Adding `GameState::Settings` and forgetting one arm fails to compile — that's a feature, not a bug. The compiler is helping you find every place affected.
+
+### Sim doesn't pause in the Paused state
+
+You forgot to skip the `step` call when not in `Playing`. The match arm structure (step inside the Playing branch only) is the correct pattern. Verify.
+
+### Title screen never advances
+
+`is_key_pressed(KeyCode::Enter)` returns true on the *frame* the key is first pressed. If you accidentally use `is_key_down`, the key being held during the splash will instantly transition. `is_key_pressed` is right.
+
+### Easter egg never fires
+
+The `konami_index = 0` *else* branch resets too aggressively — any unrelated key press during the sequence wipes progress. Loosen: only reset if the *expected next* key in the sequence is pressed and it doesn't match. Other keys (movement, mouse) shouldn't disturb the sequence.
+
+### Codex blocks input completely
+
+In the `GameState::Codex` arm, the player can still move the mouse and hover, but mouse-clicks for the codex layout aren't wired. Either add hover/click handling in `draw_codex`, or accept it as read-only.
+
+### Pause-while-sim-is-loading bug
+
+Loading via `L` on the title screen replaces `grid`. If you transition to Playing immediately, the next-frame iteration sees the new grid — correct. No bug. Mentioned because it's the kind of thing that *feels* fragile and isn't.
+
+---
+
+## Session challenge
+
+Pick one — no solution provided.
+
+1. **Settings state.** Add `GameState::Settings`. Lists adjustable constants (gravity strength, FPS cap, audio volume). Drives the same `match` pattern.
+2. **More secrets.** Add three more hidden recipes. Hint at their existence with a single `???` codex entry that doesn't reveal the conditions.
+3. **State entry/exit hooks.** Wrap states in a richer enum: `GameState::Playing { last_paused: Option<Instant> }`. Use the timestamp to fade in the unpause overlay. The data-bearing variant pattern is the next level of state-machine sophistication.
+4. **Replay mode.** Record key/mouse events to a `Vec<(f64, Event)>` (with timestamps). Add `GameState::Replay`. Press a key to replay your own last session.
+
+---
+
+## Quick reference
+
+| What | Code |
+|---|---|
+| Marker enum | `enum State { A, B, C }` |
+| Exhaustive match | `match state { State::A => ..., }` |
+| Transition pattern | `state = match state { ... };` |
+| `is_key_pressed` | edge trigger (fires once per press) |
+| `is_key_down` | held trigger (fires every frame) |
+| Sin-pulse | `((get_time() * 2.0).sin() * 0.3 + 0.7) as f32` |
+| Pulse text alpha | `Color::new(1.0, 1.0, 1.0, alpha)` |
+| Title-centre text | `(screen_width() - dim.width) / 2.0` |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 23**. Worth recording:
+
+- A clip of the title-screen idle-particles plus the pause overlay — both are visible polish
+- Which easter egg you chose and why
+- Your sentence on state machines: "why is `match`-on-state better than `if`-tree dispatch?" (Answer to memorise: exhaustiveness, locality, transition clarity.)

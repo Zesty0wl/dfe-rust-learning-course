@@ -1,269 +1,310 @@
-# Session 9: Structs and Methods
+# Session 9 — Structs: Giving Cells a Temperature
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-## What You'll Learn
-
-How to bundle related data into a single named type — a `struct` — and attach behaviour to it with `impl` blocks. This is the moment where Rust starts to feel like it's modelling *real things*, not just shuffling numbers.
-
-## The Big Idea
-
-Up until now you've used Rust's built-in types — numbers, strings, booleans. That's fine for arithmetic, but try modelling a Minecraft block with just integers:
-
-```rust
-let block_type = 1;
-let x = 10;
-let y = 64;
-let z = 200;
-let hardness = 1.5;
-```
-
-Five separate variables, no relationship between them, and `block_type = 1` could mean anything. A **struct** lets you say *"these things belong together, and here's what they're called"*:
-
-```rust
-struct Block {
-    kind: u8,
-    x: i32,
-    y: i32,
-    z: i32,
-    hardness: f32,
-}
-```
-
-Now `Block` is a **type**, like `i32` or `String` — except *you* defined it. Once you've got the type, you can attach **methods** to it with `impl`:
-
-```rust
-impl Block {
-    fn is_solid(&self) -> bool {
-        self.kind != 0
-    }
-}
-```
-
-`impl Block { ... }` literally means "implementations for `Block`". Inside it, `fn` definitions are methods, callable as `block.is_solid()`.
-
-## Concepts Covered
-
-- `struct` definition with named fields
-- Creating instances with `BlockType { field: value }` syntax
-- Field access with `.`
-- `impl` blocks — methods and associated functions
-- `&self`, `&mut self` (and `self`)
-- Associated functions — constructors like `Block::new(...)`
-- `#[derive(Debug)]` — get a free `{:?}` printer
-- Field shorthand: if a variable's name matches the field name, just write the name once
-
-## Building Towards `world-generator`
-
-In Sessions 15 and 16 you'll define a `World` struct with a 2D grid of `Tile` values. The `World` will have methods like `World::generate(seed, width, height)` and `world.render()`. Today you build the foundations on a smaller example: a `Block`.
+> **Stuck on a word?** Things like *struct*, *field*, *method*, *associated function*, *self* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-2/session-09/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-2/session-09/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session every cell in your grid is a **`Cell` struct** with two fields — its type *and* its temperature — and hot cells glow with a warmer colour. You'll have a heat-source brush that drops cells in at 200°C.
 
-### 1. Define a Block
+---
 
-`examples/block_struct/src/main.rs`:
+## What you'll learn
+
+- `struct` declarations and field access
+- `impl` blocks for **methods** (`&self`, `&mut self`, `self`)
+- **Associated functions** like `Cell::new(...)` (Rust's version of constructors)
+- The shift from "cells store one value" to "cells store *structured* data"
+- Temperature as a per-cell `f32` — and rendering a heat-map colour ramp
+
+---
+
+## The big idea
+
+Month 1 finished with `Vec<Vec<CellType>>` — every cell knows what it is, nothing more. Month 2's chemistry needs more. Fire spreads because hot cells heat their neighbours; water boils when its temperature crosses 100; lava cools and solidifies. **Cells need to remember things.**
+
+A `struct` is Rust's tool for "this thing has several related pieces of data." Today's struct is small — type + temperature — but the *shape* of the change is profound. Once your grid is `Vec<Vec<Cell>>`, every cell can hold extra state without another refactor. Session 11 adds a `lifetime` field for fire-burnout. Session 18 adds a `material_density` field for save/load. The struct is the seam where chemistry lives.
+
+---
+
+## Concepts covered
+
+- `struct Cell { cell_type: CellType, temperature: f32 }`
+- `impl Cell { fn new(...) -> Self { ... } }`
+- `&self` (read-only borrow), `&mut self` (mutable borrow), `self` (own)
+- Method call syntax: `cell.heat(10.0)` vs `Cell::new(CellType::Sand)`
+- `#[derive(Debug, Clone, Copy)]` on small structs
+- Interpolating two colours with a `mix` helper to render heat
+
+---
+
+## Building towards `sand-sim`
+
+Today's struct is the **single most important data-structure decision** in the entire course. Every later element needs at least one of:
+
+- **temperature** (fire heats, water cools)
+- **lifetime** (fire burns out, steam condenses)
+- **state** (concrete sets, metal rusts)
+
+All three are fields on `Cell`. Add them as needed, and the rest of the codebase keeps working because `Cell::new(...)` defaults them to safe values.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Month 1 finished. `month-1/milestone/sand-sim-v0.1/` builds, runs, and is tagged `v0.1`. Today you start in a fresh folder: `month-2/milestone/sand-sim-v0.2/`.
+
+### 0. Branch the project — 2 minutes
+
+From the repo root:
+
+```bash
+mkdir -p month-2/milestone/sand-sim-v0.2
+cp -R month-1/milestone/sand-sim-v0.1/. month-2/milestone/sand-sim-v0.2/
+cd month-2/milestone/sand-sim-v0.2
+cargo run     # should run identically to v0.1
+```
+
+Bump the package version in `Cargo.toml`:
+
+```toml
+[package]
+name    = "sand-sim"
+version = "0.2.0"
+```
+
+`month-2/session-09/starter/` and `month-2/session-09/solution/` (and same for sessions 10–14) work the same way as Month 1: stay-frozen snapshots. Day-to-day work happens in `month-2/milestone/sand-sim-v0.2/`.
+
+### 1. Declare the `Cell` struct — 3 minutes
+
+Just below `enum CellType` add:
 
 ```rust
-#[derive(Debug)]
-struct Block {
-    kind: u8,
-    x: i32,
-    y: i32,
-    z: i32,
-    hardness: f32,
+#[derive(Debug, Clone, Copy)]
+struct Cell {
+    cell_type:   CellType,
+    temperature: f32,
+}
+
+impl Cell {
+    /// Make a cell of the given type at room temperature.
+    fn new(cell_type: CellType) -> Self {
+        Cell { cell_type, temperature: 20.0 }
+    }
+
+    /// A handy shortcut for an empty cell.
+    fn empty() -> Self {
+        Cell::new(CellType::Empty)
+    }
+
+    /// Read-only: is this an air cell?
+    fn is_empty(&self) -> bool {
+        matches!(self.cell_type, CellType::Empty)
+    }
+
+    /// Mutate: add some heat (in degrees).
+    fn heat(&mut self, delta: f32) {
+        self.temperature = (self.temperature + delta).min(2000.0);
+    }
 }
 ```
 
-`#[derive(Debug)]` is an **attribute** — a tiny instruction to the compiler. This one says "auto-implement the `Debug` trait for me", which lets us print the struct with `{:?}`.
+A few things to walk through:
 
-### 2. Create one and inspect it
+- **`#[derive(Debug, Clone, Copy)]`** — same derives as for the enum. Because `CellType` is `Copy` and `f32` is `Copy`, the whole struct can be `Copy`.
+- **`fn new(cell_type: CellType) -> Self`** is an **associated function** (no `self` parameter). Call as `Cell::new(...)`. Rust calls these "associated functions" not "constructors" because there's no special syntax \u2014 they're just functions namespaced inside `impl`.
+- **`fn is_empty(&self)`** \u2014 the `&self` is shorthand for `&self: &Cell`. Read-only borrow. Call as `cell.is_empty()`.
+- **`fn heat(&mut self, delta: f32)`** \u2014 mutable borrow. Call as `cell.heat(10.0)`. Won't compile if the cell variable wasn't `let mut`.
+- **`matches!(...)`** \u2014 a tiny macro that returns `true` if the value matches the pattern. Saves writing a one-arm `match`.
+
+### 2. Migrate the grid \u2014 4 minutes
+
+Change every `Vec<Vec<CellType>>` to `Vec<Vec<Cell>>`. Top of `main`:
 
 ```rust
-fn main() {
-    let stone = Block {
-        kind: 1,
-        x: 10,
-        y: 64,
-        z: 200,
-        hardness: 1.5,
-    };
-
-    println!("{:?}", stone);
-    println!("Stone is at y={}", stone.y);
-}
+let mut grid: Vec<Vec<Cell>> = vec![vec![Cell::empty(); COLS]; ROWS];
 ```
 
-Notice you access fields with `.` exactly like properties in any other language. The `{:?}` formatter prints the whole struct in debug form — `{:#?}` does the same but pretty-printed across lines.
+The compiler now lists every place that assumed plain `CellType`. The fixes are mechanical:
 
-### 3. Add an `impl` block
+- `grid[r][c] = CellType::Sand;` \u2192 `grid[r][c] = Cell::new(CellType::Sand);`
+- `if grid[r][c] == CellType::Empty` \u2192 `if grid[r][c].cell_type == CellType::Empty` (or `.is_empty()`)
+- `grid[r][c].colour()` (from Session 6) \u2192 `grid[r][c].cell_type.colour()`
+- The `paint(...)` helper in Session 7 took `cell: CellType`; either pass `Cell::new(selected)` from the call site, or change `paint`'s signature.
 
-This is where Rust differs from a lot of object-oriented languages. The struct definition only contains data. Behaviour lives in a separate `impl Block { ... }` block:
+Run `cargo check` after each fix. By the time it's clean, sand still pours, water still flows \u2014 but every cell now has a temperature field, defaulting to 20.
+
+**First runnable checkpoint.** `cargo run`. Visually identical to v0.1 \u2014 you haven't drawn anything new yet. The shape of the change is internal.
+
+### 3. A heat-source brush \u2014 4 minutes
+
+Add a "heat" key. In your input block:
 
 ```rust
-impl Block {
-    fn new(kind: u8, x: i32, y: i32, z: i32) -> Self {
-        let hardness = match kind {
-            0 => 0.0,
-            1 => 1.5,
-            2 => 2.0,
-            _ => 0.5,
-        };
-        Self { kind, x, y, z, hardness }
-    }
+        if is_key_pressed(KeyCode::H) {
+            heat_source = !heat_source;
+        }
+```
 
-    fn is_solid(&self) -> bool {
-        self.kind != 0
-    }
+And a brand-new mutable boolean above the loop: `let mut heat_source: bool = false;`.
 
-    fn display_char(&self) -> char {
-        match self.kind {
-            0 => ' ',
-            1 => '#',
-            2 => '%',
-            _ => '?',
+When the heat-source mode is on, painted cells are dropped at 200\u00b0C:
+
+```rust
+fn paint(grid: &mut Vec<Vec<Cell>>, centre_row: i32, centre_col: i32, radius: i32,
+         cell_type: CellType, temperature: f32) {
+    for dy in -radius..=radius {
+        for dx in -radius..=radius {
+            if dx*dx + dy*dy > radius*radius { continue; }
+            let r = centre_row + dy;
+            let c = centre_col + dx;
+            if r < 0 || r >= ROWS as i32 || c < 0 || c >= COLS as i32 { continue; }
+            grid[r as usize][c as usize] = Cell {
+                cell_type,
+                temperature,
+            };
         }
     }
 }
 ```
 
-Three things to notice:
-
-- **`Self` (capital S)** — inside an `impl` block, `Self` is shorthand for the type being implemented. `Self { kind, x, y, z, hardness }` is the same as writing `Block { ... }`. It's a bit of typing saved and it makes refactoring easier.
-- **`fn new` has no `self` parameter** — that makes it an **associated function**, not a method. You call it with `Block::new(...)` (double colon), not `block.new(...)`. This is Rust's convention for constructors.
-- **`fn is_solid(&self)` *does* have `&self`** — that's an immutable borrow of the instance. Now you call it with method syntax: `stone.is_solid()`.
-
-### 4. Use them
+Call sites become:
 
 ```rust
-fn main() {
-    let stone = Block::new(1, 10, 64, 200);
-    let air   = Block::new(0,  0,  0,   0);
-
-    println!("Stone is solid? {}", stone.is_solid()); // true
-    println!("Air is solid?   {}", air.is_solid());   // false
-    println!("Stone renders as: {}", stone.display_char());
-}
+let temp = if heat_source { 200.0 } else { 20.0 };
+paint(&mut grid, row, col, brush_radius, selected, temp);
 ```
 
-### 5. Field shorthand
+### 4. Render the heat \u2014 6 minutes
 
-Inside `Block::new` we wrote `Self { kind, x, y, z, hardness }`. If a variable's name matches the field name, you don't need `kind: kind`. Cleaner code.
-
-### 6. `&self` vs `&mut self` vs `self`
-
-Three flavours of `self` parameter — pick based on what you're doing:
-
-- `&self` — read the data, don't change it. Like a `const` reference in C++. Most methods.
-- `&mut self` — change the data. Required if you assign to fields or call other `&mut self` methods.
-- `self` — *consume* the instance. Caller can't use it afterwards. Rare; used for builder patterns and conversions.
-
-The compiler will tell you exactly which one you need — if you write `&self` and try to mutate a field, the error is precise.
+The big visible win. Update the grid-drawing loop to interpolate towards red as temperature rises:
 
 ```rust
-impl Block {
-    fn break_it(&mut self) {
-        self.kind = 0;       // now it's air
-        self.hardness = 0.0;
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t.clamp(0.0, 1.0)
+}
+
+fn mix_colours(base: Color, hot: Color, t: f32) -> Color {
+    Color::new(
+        lerp(base.r, hot.r, t),
+        lerp(base.g, hot.g, t),
+        lerp(base.b, hot.b, t),
+        1.0,
+    )
+}
+
+impl Cell {
+    fn render_colour(&self) -> Color {
+        let base = self.cell_type.colour();
+        let hot  = Color::new(1.0, 0.3, 0.1, 1.0);
+        let t    = ((self.temperature - 20.0) / 200.0).clamp(0.0, 1.0);
+        mix_colours(base, hot, t)
     }
 }
 ```
 
-To call `break_it`, the variable itself must be `mut`:
+Then update the drawing loop:
 
 ```rust
-let mut stone = Block::new(1, 10, 64, 200);
-stone.break_it();
+        for row in 0..ROWS {
+            for col in 0..COLS {
+                let cell = grid[row][col];
+                if cell.is_empty() { continue; }
+                let x = col as f32 * CELL_SIZE;
+                let y = row as f32 * CELL_SIZE;
+                draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, cell.render_colour());
+            }
+        }
 ```
 
----
+Save. Run. Press `H` to enable heat-source mode. Drop a brush of sand. **Glowing red sand.**
 
-## Common Mistakes
+> **The Wow Moment.** Pour a stream of normal (cold) sand. It piles up beige. Press `H`. Pour another stream on top. The new sand drops in *glowing*. The pile is now a beige base with a hot orange ridge on top. **You've simulated temperature as a per-cell property** \u2014 the same data structure that Session 11 will use to make fire spread.
 
-- **Forgetting `Self` capital** — `self` (lowercase) is the instance, `Self` (uppercase) is the type.
-- **Calling `Block::new` with dot syntax** — it has no `self`, so `block.new(...)` doesn't work; use `Block::new(...)`.
-- **Calling a `&mut self` method on a non-mut variable** — `let block = ...; block.break_it();` fails. Make it `let mut block = ...;`.
-- **Forgetting `#[derive(Debug)]`** — then `println!("{:?}", block)` errors. The fix is one line above the struct.
+### 5. (Optional) Heat decays over time \u2014 3 minutes
 
----
-
-## Session Challenge
-
-Add a `Player` struct with `name: String`, `health: u32`, `position: (i32, i32, i32)`, and `inventory: Vec<u8>` (a list of block kinds the player is carrying).
-
-Implement:
-
-- `Player::new(name: &str)` — starts with 20 health, position `(0, 64, 0)`, empty inventory
-- `take_damage(&mut self, amount: u32)` — subtracts from health, doesn't go below 0
-- `is_alive(&self) -> bool`
-- `pick_up(&mut self, kind: u8)` — pushes onto inventory
-- `summary(&self) -> String` — returns something like `"Steve: 18hp at (0, 64, 0), carrying 3 blocks"`
-
-(Quick taste of `String` and `Vec` — you'll see both in detail in Session 11.)
-
----
-
-## Quick Reference
+In `step` (after the per-cell update), add a sweep that cools every non-empty cell by a tiny amount per frame:
 
 ```rust
-struct Foo {
-    a: i32,
-    b: String,
-}
-
-impl Foo {
-    fn new(a: i32, b: String) -> Self {       // associated function
-        Self { a, b }
-    }
-
-    fn doubled_a(&self) -> i32 {              // immutable method
-        self.a * 2
-    }
-
-    fn add_to_b(&mut self, s: &str) {         // mutable method
-        self.b.push_str(s);
+fn cool_pass(grid: &mut Vec<Vec<Cell>>) {
+    for row in grid.iter_mut() {
+        for cell in row.iter_mut() {
+            if !cell.is_empty() && cell.temperature > 20.0 {
+                cell.temperature = (cell.temperature - 0.5).max(20.0);
+            }
+        }
     }
 }
-
-let f = Foo::new(3, String::from("hi"));
-println!("{}", f.doubled_a());                // 6
 ```
 
----
-
-## Further Reading
-
-Curated extra material on the topics covered in this session (Structs and Methods). All free; all current as of writing.
-
-- [**The Rust Book** — *Using Structs to Structure Related Data* (chapter 5)](https://doc.rust-lang.org/book/ch05-00-structs.html) — Every flavour of struct (named, tuple, unit) plus methods and `impl` blocks.
-- [**Rust by Example** — *Structures* and *Methods*](https://doc.rust-lang.org/rust-by-example/custom_types/structs.html) — Short, runnable examples for every variant.
-- [**The Rust Reference** — *Methods*](https://doc.rust-lang.org/reference/items/associated-items.html#methods) — The exhaustive rules. Useful when you wonder why a method *doesn't* take `&self`.
+Call it once at the end of `step`. Now hot sand cools to neutral over a couple of seconds. **The chemistry has begun.**
 
 ---
 
-## Stuck?
+## Linux (Ubuntu) note
 
-You're not the first. Three places that work when you're properly stuck:
+No new system dependencies this session \u2014 it's all type-system work. Two things worth knowing on Ubuntu:
 
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+- The grid is now ~`120 * 80 * sizeof(Cell)` = roughly 153,600 bytes (each `Cell` is `CellType` discriminant + `f32` + padding \u2248 16 bytes). Still trivially small. If `cargo run` ever feels sluggish on a low-RAM Ubuntu laptop, watch `htop` while the sim is running \u2014 memory should be flat at well under 50 MB.
+- The heat-render colour mix uses three `f32` lerps per non-empty cell per frame. On a Pi 4 (32-bit Ubuntu) you may see FPS drop under 60 with a busy grid \u2014 `cargo run --release` recovers it fully. From now on, milestone testing should always be `--release` on lower-end hardware.
 
 ---
-## DofE Log Reminder
 
-Open [`dfe/session-log.md`](../../dfe/session-log.md), find row **9**, fill in date, time, what you built, and what you learned. Don't put it off — it takes 60 seconds and your assessor needs it.
+## Common mistakes
+
+### `error[E0382]: borrow of moved value: 'cell'`
+
+You forgot `Copy` in the derive. Without it, `let cell = grid[r][c]; ...; grid[r][c] = cell;` moves the value out, and the second access fails. Add `Copy` to the `#[derive(...)]` (and `Clone` if not there \u2014 `Copy` requires `Clone`).
+
+### `error[E0594]: cannot assign to 'self.temperature' which is behind a '&' reference`
+
+You wrote `fn heat(&self, delta: f32)` instead of `fn heat(&mut self, ...)`. Read-only methods take `&self`; mutating methods take `&mut self`. The compiler enforces the distinction.
+
+### Heat colour clamps to red instantly
+
+You forgot the `.clamp(0.0, 1.0)` in the `t` calculation, or the temperature range is too small. The formula `(self.temperature - 20.0) / 200.0` says \"linearly map 20\u00b0\u20132200\u00b0 to 0\u20131\". For 20\u00b0\u20131000\u00b0 use `/ 980.0`. Pick a value that visually matches what you want.
+
+### Painting clears temperature back to 20\u00b0
+
+You're calling `Cell::new(cell_type)` (which defaults to 20.0) instead of constructing the struct directly with the chosen temperature. Use `Cell { cell_type, temperature }` in `paint`.
+
+### `matches!(self.cell_type, CellType::Empty)` won't compile
+
+You wrote `matches!(self.cell_type, CellType::Empty())` with parens \u2014 only variants that hold data take parens (like `CellType::Wood(2)`). Plain unit variants don't.
+
+---
+
+## Session challenge
+
+Pick one, no solution provided.
+
+1. **A cool-source brush.** Mirror the heat brush \u2014 press `K` for \"cool\" mode \u2014 and drop cells at -50\u00b0C. Render cold cells with a blue tint by extending `render_colour` with a third anchor.
+2. **Equilibrate heat with neighbours.** In the cool-pass, instead of decaying towards 20, average each non-empty cell's temperature with its four neighbours (skip empty). The result: heat *diffuses* through solid masses. Real conduction in eight lines.
+3. **Click-to-inspect.** Hold `I` and hover the mouse \u2014 print the cell type and temperature of the cell under the cursor to the top-left. Excellent debugging tool you'll use in every later session.
+4. **`impl Display for Cell`.** Manually implement `Display` so `println!(\"{}\", cell)` prints something like `Sand@200\u00b0C`. (Recall from Session 6 that `Display` isn't derivable \u2014 you write it by hand.)
+
+---
+
+## Quick reference
+
+| What | Code |
+|---|---|
+| Struct | `struct Cell { cell_type: CellType, temperature: f32 }` |
+| Method (read-only) | `fn is_empty(&self) -> bool { ... }` |
+| Method (mutating) | `fn heat(&mut self, delta: f32) { ... }` |
+| Associated function | `fn new(t: CellType) -> Self { ... }` |
+| Call associated fn | `Cell::new(CellType::Sand)` |
+| Call method | `cell.heat(50.0)` |
+| Field access | `cell.temperature` |
+| `matches!` macro | `matches!(c.cell_type, CellType::Sand)` |
+| Linear interpolation | `a + (b - a) * t` |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 9**. Worth recording:
+
+- Your sentence describing the difference between `&self`, `&mut self`, and `self` as a method receiver
+- A screenshot of the heat-source brush dropping glowing sand on top of cold sand \u2014 visible evidence of \"chemistry has begun\"

@@ -1,323 +1,453 @@
-# Session 17: The Ecosystem — Modules, Crates, and Cargo
+# Session 17 — Modules: Taming the Codebase
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-## What You'll Learn
-
-How real Rust projects are organised. Up to now everything has lived in `src/main.rs`. That's fine for one-file demos but not for anything serious. Today: split code across files with **modules**, control visibility with **`pub`**, bring names into scope with **`use`**, and pull in third-party libraries (**crates**) from `crates.io`.
-
-## The Big Idea
-
-Three terms, used constantly, often confusingly mixed up:
-
-- **Crate** — a *Rust project*. Either a library or a binary. Each has a single `Cargo.toml`. Things on `crates.io` are crates.
-- **Module** — a *namespace inside a crate*. Created with `mod foo;` (looks for `foo.rs` or `foo/mod.rs`). Helps you organise code into logical sections.
-- **Package** — a folder with a `Cargo.toml` containing one or more crates (usually one).
-
-The hierarchy: a **package** contains one or more **crates**. A **crate** contains a tree of **modules**.
-
-By default everything in Rust is **private**. To expose something across module boundaries, mark it `pub`. To use a name without typing the full path, `use` it.
-
-```rust
-// src/main.rs
-mod notes;          // declares: there's a module called notes
-mod scales;
-
-use notes::Note;    // bring Note into scope so we can write `Note::C` instead of `notes::Note::C`
-
-fn main() {
-    let n = Note::C;
-    let scale = scales::major(n);
-    println!("{:?}", scale);
-}
-```
-
-## Concepts Covered
-
-- `mod foo;` — declare a module (file `foo.rs` or folder `foo/mod.rs`)
-- `pub` — mark items public to outer scopes
-- `use` — bring names into scope; `use foo::{a, b, c};` for multiple
-- The crate root: `src/main.rs` for binaries, `src/lib.rs` for libraries
-- `Cargo.toml` `[dependencies]` — versions, semantic versioning, `cargo add`
-- `[dev-dependencies]` — only used for tests/benchmarks
-- Reading docs on `docs.rs`, finding crates on `crates.io`
-
-## Building Towards `midi-synth`
-
-The synthesiser will have multiple files: `oscillator.rs`, `envelope.rs`, `wav.rs`, `midi_file.rs`, `live.rs`, `cli.rs`, plus `main.rs`. You couldn't reasonably keep that in one file. Today's example refactors something familiar — your Month 1 `music-theory-cli` — into proper modules. Same code, cleaner structure.
+> **Stuck on a word?** Things like *module*, *crate*, *visibility*, *re-export*, *namespace* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-3/session-17/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-3/session-17/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session your `main.rs` is **about 25 lines long** — and everything that used to be in it has been split into clean, focused modules in their own files: `simulation.rs`, `elements.rs`, `reactions.rs`, `rendering.rs`, `audio.rs`, `ui.rs`. No new visible feature. Today's win is *structure*.
 
-### 1. The example layout
+---
 
-`examples/music_theory_modular/` looks like this:
+## What you'll learn
 
-```text
-music_theory_modular/
-├── Cargo.toml
-└── src/
-    ├── main.rs        # the binary's entry point
-    ├── notes.rs       # Note enum, MIDI conversion
-    └── scales.rs      # scale patterns, scale generation
-```
+- `mod`, `pub`, `use`, and `crate::` — Rust's visibility/namespacing system
+- Splitting a single file into a directory of files
+- `pub use` re-exports — controlling your module's public API
+- Why **encapsulation** matters: the compiler enforces "this is private" in a way most languages can't
+- Reading a refactor as a *taxonomy* of what the program does
 
-That's all you need. Each `.rs` file at `src/` level becomes a module of the same name.
+---
 
-### 2. `notes.rs`
+## The big idea
 
-```rust
-#[derive(Debug, Clone, Copy)]
-pub enum Note {
-    C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, B,
-}
+`main.rs` from Session 16 is hovering around 500 lines. That's the upper end of "still readable in one file." Beyond that, **finding the right function takes longer than writing the function**, and that's the moment a single-file project starts to slow you down.
 
-impl Note {
-    pub fn semitone(self) -> u8 {
-        self as u8
-    }
+Rust's module system splits a file along three axes:
 
-    pub fn from_semitone(n: u8) -> Self {
-        let names = [
-            Note::C, Note::CSharp, Note::D, Note::DSharp, Note::E,
-            Note::F, Note::FSharp, Note::G, Note::GSharp,
-            Note::A, Note::ASharp, Note::B,
-        ];
-        names[(n % 12) as usize]
-    }
+1. **Files become modules.** A new file in your `src/` folder is a new module, automatically.
+2. **Each `pub` item is visible outside its module; the rest is private.**
+3. **`use` brings names into scope.** Without it, everything would need its full path.
 
-    pub fn name(self) -> &'static str {
-        match self {
-            Note::C => "C",   Note::CSharp => "C#",
-            Note::D => "D",   Note::DSharp => "D#",
-            Note::E => "E",
-            Note::F => "F",   Note::FSharp => "F#",
-            Note::G => "G",   Note::GSharp => "G#",
-            Note::A => "A",   Note::ASharp => "A#",
-            Note::B => "B",
-        }
-    }
-}
-```
+You'll split `sand-sim` into six modules today. The split is opinionated: every Rust simulation in the wild looks roughly like this. **Reusable scaffolding for every project you build for the rest of your life.**
 
-Note the `pub` everywhere — without it, this enum and its methods would be invisible to `main.rs`.
+---
 
-### 3. `scales.rs`
+## Concepts covered
 
-```rust
-use crate::notes::Note;
+- `mod foo;` in `main.rs` → loads `src/foo.rs`
+- `pub fn`, `pub struct`, `pub use`
+- `crate::` (this crate), `super::` (parent module), `self::` (this module)
+- `use crate::elements::CellType;`
+- Re-exports: `pub use crate::reactions::REACTIONS;`
+- The convention: tests, helpers, and constants belong in the same module as the thing they support
 
-pub const MAJOR_PATTERN:        [u8; 7] = [2, 2, 1, 2, 2, 2, 1];
-pub const NATURAL_MINOR_PATTERN:[u8; 7] = [2, 1, 2, 2, 1, 2, 2];
+---
 
-pub fn build(root: Note, pattern: &[u8]) -> Vec<Note> {
-    let mut out = vec![root];
-    let mut current = root.semitone();
-    for step in pattern {
-        current = (current + step) % 12;
-        out.push(Note::from_semitone(current));
-    }
-    out
-}
+## Building towards `sand-sim`
 
-pub fn major(root: Note) -> Vec<Note> {
-    let mut s = build(root, &MAJOR_PATTERN);
-    s.pop();   // 8th note is the root again — drop it for a 7-note display
-    s
-}
+The module split is **the most generally-applicable engineering lesson in the course.** Every later session writes code into the right module rather than piling onto `main.rs`. Session 18's save/load goes in a new `persist.rs`. Session 19's recipes go in `recipes.rs`. Session 20's codex UI extends `ui.rs`. By Session 24's v1.0 ship, the project has maybe ten modules — but `main.rs` is still ~25 lines.
 
-pub fn natural_minor(root: Note) -> Vec<Note> {
-    let mut s = build(root, &NATURAL_MINOR_PATTERN);
-    s.pop();
-    s
-}
-```
+---
 
-`use crate::notes::Note;` — `crate::` means "the root of this crate" (i.e. `src/`). So `crate::notes::Note` is the `Note` enum from `notes.rs`.
+## Step-by-step walkthrough
 
-### 4. `main.rs`
+> **Where you should be.** Session 16 finished. v0.2 ships. Now you copy `sand-sim-v0.2/` to `sand-sim-v1.0/` and start refactoring from there.
 
-```rust
-mod notes;
-mod scales;
-
-use notes::Note;
-
-fn main() {
-    let scale = scales::major(Note::C);
-    let names: Vec<&str> = scale.iter().map(|n| n.name()).collect();
-    println!("C Major: {}", names.join(" "));
-
-    let minor = scales::natural_minor(Note::A);
-    let mnames: Vec<&str> = minor.iter().map(|n| n.name()).collect();
-    println!("A Minor: {}", mnames.join(" "));
-}
-```
-
-Two `mod` declarations tell the compiler "these modules exist". Then `use notes::Note;` is just for convenience.
-
-### 5. `pub`, demystified
-
-Visibility rules in Rust are strict but logical:
-
-- Default: **private**, only the current module can see it.
-- `pub` — visible to any code that knows the path.
-- `pub(crate)` — visible anywhere in this crate, but not to outside crates that depend on yours.
-- `pub(super)` — visible to the parent module only.
-
-For `main.rs`-only programs (binaries), `pub` and `pub(crate)` behave identically because there's no "outside crate" to worry about. For libraries, the distinction matters — `pub` is your public API.
-
-### 6. Folder modules
-
-If `notes` grows large, you can promote it from `notes.rs` to a folder:
-
-```text
-src/
-├── notes/
-│   ├── mod.rs        # the module's "main file"
-│   └── chord.rs      # a sub-module: notes::chord
-└── main.rs
-```
-
-Then in `notes/mod.rs`: `pub mod chord;` exposes `notes::chord`. Works exactly the same.
-
-### 7. Adding crates
-
-Suppose you want coloured terminal output. Open `Cargo.toml` and:
-
-```toml
-[dependencies]
-colored = "2.1"
-```
-
-…or just from the terminal:
+### 0. Branch the project — 2 minutes
 
 ```bash
-cargo add colored
+mkdir -p month-3/milestone/sand-sim-v1.0
+cp -R month-2/milestone/sand-sim-v0.2/. month-3/milestone/sand-sim-v1.0/
+cd month-3/milestone/sand-sim-v1.0
+cargo run --release    # confirm it works in the new location
 ```
 
-Both do the same. Then in your code:
-
-```rust
-use colored::Colorize;
-println!("{}", "C Major".green().bold());
-```
-
-`cargo build` downloads the crate from `crates.io`, compiles it, links it. Done. The downloaded source lives in `~/.cargo/registry/` so subsequent builds are instant.
-
-### 8. The `Cargo.toml` zoo
+Bump the version in `Cargo.toml`:
 
 ```toml
 [package]
-name = "my-thing"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-serde = "1.0"
-clap  = { version = "4", features = ["derive"] }
-some-crate = { git = "https://github.com/foo/bar" }      # straight from git
-local-helper = { path = "../helper" }                     # local path
-
-[dev-dependencies]
-proptest = "1"        # only built for tests / benches
-
-[features]
-fast = []             # define your own conditional-compilation features
+name    = "sand-sim"
+version = "1.0.0-alpha"
 ```
 
-Versions follow **semver**: `"2.1"` means "any 2.x release at or above 2.1, but not 3.x". Cargo will happily upgrade you to 2.5, 2.99, etc. — but never 3.0 unless you explicitly bump.
+### 1. Plan the split — 2 minutes
 
----
+Before touching code, decide on the modules. A good split groups things by **what they're about**, not by what they technically *are*:
 
-## Common Mistakes
+| Module | What lives there |
+|---|---|
+| `elements` | `CellType` enum, `Cell` struct, `density()`, `colour()` |
+| `reactions` | `ReactionOutcome`, `build_reactions`, the `REACTIONS` static, `react()` |
+| `simulation` | `step()`, all `update_*` functions, neighbour helpers, paint helper |
+| `rendering` | `render_grid()`, `heatmap_colour()`, `cell_colour()` |
+| `ui` | `draw_selector()`, `draw_legend()`, `draw_hud()`, `count_cells()` |
+| `audio` | sound-loading, per-event cooldowns, the trigger logic |
 
-- **Forgetting `pub`** — error: "function `foo` is private". Fix: `pub fn foo`.
-- **`mod` declared twice in different files** — only the crate root (`main.rs` or `lib.rs`) and the parent module's `mod.rs` should `mod foo;` it. If you `mod foo;` from two places you get a duplicate definition error.
-- **`use crate::...` vs `use super::...` vs no prefix** — `crate::` from the root, `super::` from one level up, no prefix uses the current module's children.
-- **Forgetting to commit `Cargo.lock`** — for binary projects, *do* commit `Cargo.lock` (it pins exact versions). For library crates, traditionally don't (let consumers pick). Our setup is binary-only, so commit it.
+`main.rs` keeps: window config, the high-level loop, glue.
 
----
+### 2. Create the files — 1 minute
 
-## Session Challenge
+```bash
+cd src/
+touch elements.rs reactions.rs simulation.rs rendering.rs ui.rs audio.rs
+```
 
-Take your Month 1 `music-theory-cli` solution. Refactor it from a single `main.rs` into:
+### 3. Wire them up in `main.rs` — 1 minute
 
-- `src/notes.rs` — `Note` and helpers
-- `src/scales.rs` — `Scale` enum and pattern lookup
-- `src/chords.rs` — chord-quality logic
-- `src/main.rs` — argument parsing and orchestration
-
-Confirm the refactored version produces identical output to the original. Commit before and after, so you can see the diff is *just* moving code, not changing behaviour.
-
----
-
-## Quick Reference
+Top of `main.rs`:
 
 ```rust
-// Crate root: src/main.rs
-mod notes;            // load notes.rs
-mod scales;           // load scales.rs
+use macroquad::prelude::*;
 
-use notes::Note;      // bring symbol into scope
-use scales::{major, natural_minor};   // multiple at once
+mod elements;
+mod reactions;
+mod simulation;
+mod rendering;
+mod ui;
+mod audio;
 
-fn main() {
-    let s = major(Note::C);
+use elements::{Cell, CellType, COLS, ROWS, CELL_SIZE};
+use simulation::{step, paint};
+use rendering::render_grid;
+use ui::{draw_selector, draw_legend, draw_hud};
+use audio::AudioState;
+```
+
+`mod foo;` tells rustc: "look for `src/foo.rs` (or `src/foo/mod.rs`) and load it as a module named `foo`." `use ...` brings those names into the current scope.
+
+### 4. Move `elements.rs` — 5 minutes
+
+Cut these from `main.rs`, paste into `src/elements.rs`, mark public:
+
+```rust
+// src/elements.rs
+
+use macroquad::prelude::*;
+
+pub const COLS: usize = 120;
+pub const ROWS: usize = 80;
+pub const CELL_SIZE: f32 = 6.0;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CellType {
+    Empty,
+    Sand,
+    Water,
+    Stone,
+    Wood,
+    Fire,
+    Smoke,
+    Oil,
+    OilFire,
+    Steam,
+    Acid,
+    Lava,
+    Ice,
+}
+
+impl CellType {
+    pub fn colour(self) -> Color { /* ... */ }
+    pub fn name(self) -> &'static str { /* ... */ }
+    pub fn density(self) -> u8 { /* ... */ }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Cell {
+    pub cell_type:   CellType,
+    pub temperature: f32,
+    pub lifetime:    u8,
+}
+
+impl Cell {
+    pub fn new(cell_type: CellType) -> Self { /* ... */ }
+    pub fn empty() -> Self { Self::new(CellType::Empty) }
+    pub fn is_empty(&self) -> bool { matches!(self.cell_type, CellType::Empty) }
+    pub fn heat(&mut self, delta: f32) {
+        self.temperature = (self.temperature + delta).min(2000.0);
+    }
 }
 ```
 
-```toml
-# Cargo.toml
-[dependencies]
-colored = "2.1"
-clap = { version = "4", features = ["derive"] }
+Run `cargo check`. Errors will point to every `main.rs` site that uses `CellType` or `Cell` without the new `use` line. Either add `use crate::elements::CellType;` at the top, or path-qualify (`crate::elements::CellType::Sand`).
+
+### 5. Move `reactions.rs` — 5 minutes
+
+```rust
+// src/reactions.rs
+
+use std::collections::HashMap;
+use std::sync::OnceLock;
+use crate::elements::CellType;
+
+#[derive(Debug, Clone, Copy)]
+pub struct ReactionOutcome {
+    pub new_source: Option<CellType>,
+    pub new_target: Option<CellType>,
+    pub heat: f32,
+    pub probability: f32,
+}
+
+impl ReactionOutcome {
+    pub fn replace_both(source: CellType, target: CellType, heat: f32) -> Self { /* ... */ }
+}
+
+static REACTIONS: OnceLock<HashMap<(CellType, CellType), ReactionOutcome>> = OnceLock::new();
+
+pub fn reactions() -> &'static HashMap<(CellType, CellType), ReactionOutcome> {
+    REACTIONS.get_or_init(build)
+}
+
+fn build() -> HashMap<(CellType, CellType), ReactionOutcome> {
+    // ... your existing build_reactions body ...
+}
+
+pub fn react(source: CellType, target: CellType) -> Option<ReactionOutcome> {
+    reactions().get(&(source, target)).copied()
+}
 ```
+
+Note `pub` on the things that `main.rs` and `simulation.rs` need (`ReactionOutcome`, `react`); the `build` function stays private — it's an implementation detail.
+
+### 6. Move `simulation.rs` — 8 minutes
+
+The largest move. Cut every `update_*` function, `step`, `paint`, `try_react`, the `NEIGHBOURS_*` consts. Paste into `src/simulation.rs`. The top of the file should be:
+
+```rust
+// src/simulation.rs
+
+use crate::elements::{Cell, CellType, ROWS, COLS};
+use crate::reactions::{react, ReactionOutcome};
+
+pub const NEIGHBOURS_4: [(i32, i32); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
+pub const NEIGHBOURS_8: [(i32, i32); 8] = [
+    (-1, -1), (-1, 0), (-1, 1),
+    ( 0, -1),          ( 0, 1),
+    ( 1, -1), ( 1, 0), ( 1, 1),
+];
+
+pub fn step(grid: &mut Vec<Vec<Cell>>) { /* ... */ }
+
+pub fn paint(grid: &mut Vec<Vec<Cell>>, row: i32, col: i32, radius: i32,
+             cell_type: CellType, temperature: f32) { /* ... */ }
+
+fn try_react(/* ... */) { /* ... */ }
+fn update_sand(/* ... */) { /* ... */ }
+fn update_water(/* ... */) { /* ... */ }
+// ... etc ...
+```
+
+`step` and `paint` are `pub` because `main.rs` calls them. The per-element `update_*` functions are private — only `step` calls them, and `step` lives in the same module.
+
+### 7. Rendering, UI, audio — 5 minutes
+
+Same pattern. `rendering.rs` gets the per-frame draw loop and heatmap colour. `ui.rs` gets the selector, legend, HUD, `count_cells`. `audio.rs` gets sound loading and the cooldown triggers — wrap them in a struct for cleanliness:
+
+```rust
+// src/audio.rs
+
+use macroquad::audio::{Sound, load_sound, play_sound_once};
+use std::collections::HashMap;
+use crate::elements::CellType;
+
+pub struct AudioState {
+    pub sand: Sound,
+    pub fire: Sound,
+    pub lava: Sound,
+    pub boom: Sound,
+    pub cd:   [u32; 4],   // [sand, fire, lava, boom]
+    pub prev_oilfire: usize,
+}
+
+impl AudioState {
+    pub async fn load() -> Self {
+        Self {
+            sand: load_sound("assets/sand.wav").await.unwrap(),
+            fire: load_sound("assets/fire.wav").await.unwrap(),
+            lava: load_sound("assets/lava.wav").await.unwrap(),
+            boom: load_sound("assets/boom.wav").await.unwrap(),
+            cd: [0; 4],
+            prev_oilfire: 0,
+        }
+    }
+
+    pub fn tick(&mut self) {
+        for c in &mut self.cd { if *c > 0 { *c -= 1; } }
+    }
+
+    pub fn trigger(&mut self, counts: &HashMap<CellType, usize>, mouse_held_sand: bool) {
+        // ... the logic from Session 16 ...
+    }
+}
+```
+
+### 8. The new `main.rs` — 5 minutes
+
+After all moves it's a clean ~25 lines:
+
+```rust
+use macroquad::prelude::*;
+
+mod elements;
+mod reactions;
+mod simulation;
+mod rendering;
+mod ui;
+mod audio;
+
+use elements::{Cell, CellType, COLS, ROWS, CELL_SIZE};
+use simulation::{step, paint};
+use rendering::render_grid;
+use ui::{draw_selector, draw_legend, draw_hud, count_cells};
+use audio::AudioState;
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "sand-sim v1.0".to_owned(),
+        window_width:  (COLS as f32 * CELL_SIZE) as i32,
+        window_height: (ROWS as f32 * CELL_SIZE) as i32,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
+async fn main() {
+    let mut grid: Vec<Vec<Cell>> = vec![vec![Cell::empty(); COLS]; ROWS];
+    let mut audio = AudioState::load().await;
+    let mut selected = CellType::Sand;
+    let mut paused = false;
+    let mut heatmap = false;
+    let mut brush_radius = 2i32;
+
+    loop {
+        ui::handle_input(&mut grid, &mut selected, &mut paused, &mut heatmap, &mut brush_radius);
+        if !paused { step(&mut grid); }
+        audio.tick();
+        let counts = count_cells(&grid);
+        audio.trigger(&counts, selected == CellType::Sand && is_mouse_button_down(MouseButton::Left));
+        clear_background(BLACK);
+        render_grid(&grid, heatmap);
+        draw_selector(selected, brush_radius);
+        draw_legend();
+        draw_hud(&counts);
+        next_frame().await;
+    }
+}
+```
+
+That's the high-level shape of the whole program, on one screen. **Save. Run.** Identical behaviour to v0.2. The win is invisible.
+
+> **The Wow Moment.** Open the `src/` folder in your file explorer. You see seven files. Each file is between 40 and 200 lines. Each does *one thing*. You can ask a friend "where does fire spread?" and they answer with five seconds of context: "open `simulation.rs`, look for `update_fire`." That speed of navigation is what every senior engineer is buying with their refactoring effort. **You bought it in one session.**
+
+### 9. (Optional) Re-exports — 2 minutes
+
+If you'd rather write `use crate::Cell` than `use crate::elements::Cell` from `main.rs`, add re-exports:
+
+```rust
+// src/lib.rs (or just keep in main.rs)
+pub use crate::elements::{Cell, CellType, COLS, ROWS, CELL_SIZE};
+pub use crate::reactions::{ReactionOutcome, react};
+```
+
+Some teams love this (shorter call sites). Others hate it (hides where things come from). Pick a side; be consistent.
+
+---
+
+## Linux (Ubuntu) note
+
+The split has a real upside on Ubuntu: **incremental builds get much faster** because `cargo` recompiles only the changed module and anything that depends on it. After today, editing `audio.rs` and running `cargo run` recompiles maybe 5% of the codebase instead of 100%.
+
+To verify on your Ubuntu machine:
 
 ```bash
-cargo add hound        # add to dependencies
-cargo add --dev proptest   # add to dev-dependencies
-cargo tree             # see your dep graph
-cargo doc --open       # build & view docs for every dep you use
+cargo clean
+time cargo build --release          # first build, slow (~60s typical)
+# Now edit audio.rs (add a comment somewhere)
+time cargo build --release          # ~3-8s typical — only audio.rs and main.rs recompile
 ```
 
----
+You can also enable `sccache` to share build artifacts across projects:
 
-## Further Reading
+```bash
+cargo install sccache
+export RUSTC_WRAPPER=$(which sccache)
+```
 
-Curated extra material on the topics covered in this session (Modules, Crates, Cargo). All free; all current as of writing.
+Add the export to `~/.bashrc` / `~/.zshrc` to make it permanent. Saves serious time across multiple Rust projects.
 
-- [**The Rust Book** — *Managing Growing Projects with Packages, Crates, and Modules* (chapter 7)](https://doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html) — Modules, paths, `pub`, `use`. Tricky chapter — read twice.
-- [**The Cargo Book**](https://doc.rust-lang.org/cargo/) — Everything about Cargo. The *Reference* section is encyclopaedic; bookmark it.
-- [**`crates.io`**](https://crates.io) — Browse, search, evaluate. Download counts and recent updates are good signals.
-- [**Choosing a crate — *blessed.rs* curated list**](https://blessed.rs) — Community-curated 'these are the de-facto-standard crates for X' index. Saves hours.
-- [**Publishing on `crates.io`** — Cargo book chapter](https://doc.rust-lang.org/cargo/reference/publishing.html) — If you ever want to publish your own crate, this is the playbook.
-
----
-
-## Stuck?
-
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+VS Code's *file explorer* on Ubuntu becomes the primary way you navigate the project after today. The Outline view (`Ctrl+Shift+O` to jump to a symbol in the current file, `Ctrl+T` for workspace-wide) becomes muscle memory.
 
 ---
-## DofE Log Reminder
 
-Row 17. New month, fresh chain. Keep going.
+## Common mistakes
+
+### `error[E0432]: unresolved import 'crate::elements::Cell'`
+
+You forgot to mark the item `pub` in the module file. Check `pub struct Cell { ... }`, not `struct Cell { ... }`. Same for `pub fn`, `pub const`, `pub enum`.
+
+### `error[E0603]: function 'update_sand' is private`
+
+Calling a private function from outside its module. Either make it `pub`, or call it via a public function in the same module. The general guideline: keep the surface area as small as possible. Only items used from outside need `pub`.
+
+### Circular imports
+
+`elements.rs` uses `reactions::ReactionOutcome` and `reactions.rs` uses `elements::CellType`. Compiler complains. Solution: one direction wins. Usually the lower-level module (elements) should not depend on the higher-level one (reactions). Re-architect so `ReactionOutcome` lives in `reactions.rs` and `elements.rs` doesn't reference it.
+
+### Tests in the wrong module
+
+If you've been writing tests, leave them at the bottom of the same module they test:
+
+```rust
+// in src/elements.rs
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test] fn new_empty_is_empty() { assert!(Cell::empty().is_empty()); }
+}
+```
+
+`use super::*;` brings the parent module's items into scope.
+
+### `error: file not found for module 'simulation'`
+
+You declared `mod simulation;` in `main.rs` but never created `src/simulation.rs`. Make the file. The compiler is literal: `mod foo` requires `src/foo.rs` or `src/foo/mod.rs`.
+
+### Re-exports break code
+
+If `main.rs` did `use crate::elements::CellType;` and you also add `pub use crate::elements::CellType;` at the top of `main.rs`, you have two names for the same thing. Cosmetic but confusing. Pick one.
+
+---
+
+## Session challenge
+
+Pick one — no solution provided.
+
+1. **A `tests/` directory.** Move integration tests out of `#[cfg(test)] mod tests` and into `tests/grid_invariants.rs` — Rust's convention for *integration* tests. Test that `step` is idempotent on an empty grid, that `react(Lava, Water)` returns the stone+steam outcome, etc.
+2. **A `benches/` directory.** Create `benches/step_bench.rs` and use the `criterion` crate to benchmark how long `step` takes on a 1000-fire-cell grid. Compare across `cargo run` and `cargo run --release`.
+3. **Cargo workspace.** Split `sand-sim` into a workspace with `engine/` (everything except `main.rs`) and `sand-sim/` (the binary). Useful for the Session 19+ recipe system if you want to share code with a separate codex tool.
+4. **`lib.rs` plus `main.rs`.** Convert to a hybrid: `lib.rs` exposes the engine, `main.rs` is the binary that uses it. Same shape as a workspace but in one crate.
+
+---
+
+## Quick reference
+
+| What | Code |
+|---|---|
+| Make a file a module | `mod foo;` in `main.rs` (loads `src/foo.rs`) |
+| Make item visible | `pub fn`, `pub struct`, etc. |
+| Cross-module path | `use crate::elements::Cell;` |
+| Parent module | `use super::Cell;` |
+| This module | `use self::helper;` |
+| Re-export | `pub use crate::elements::Cell;` |
+| Test in same file | `#[cfg(test)] mod tests { use super::*; ... }` |
+| Integration tests | `tests/foo.rs` (own crate, sees only `pub`) |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 17**. Worth recording:
+
+- A screenshot of your `src/` folder open in VS Code's file explorer — six neat files where before there was one giant one
+- Your sentence on "what `pub` *means*" — the discipline of opening only what callers need

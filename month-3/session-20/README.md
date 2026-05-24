@@ -1,307 +1,335 @@
-# Session 20: Generics and Advanced Traits
+# Session 20 — The Codex UI
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
+> **Stuck on a word?** Things like *generic*, *type parameter*, *trait bound*, *trait object*, *silhouette* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
-## What You'll Learn
+---
 
-How to write code once that works for *any* type that meets your requirements. Generics, trait bounds, `impl Trait` shorthand, dynamic dispatch with `Box<dyn Trait>`, and just enough about lifetimes to read compiler errors. By the end you can explain *why* `Vec<T>` is one type that works for any `T`.
+## The Goal
 
-## The Big Idea
+By the end of this session pressing **`TAB` opens a Pokédex-style codex**: a grid of squares, one per element. Discovered ones are in colour with their name underneath; undiscovered ones are grey silhouettes labelled "???". Hovering over an entry shows a brief description.
 
-You've used generics already without naming them: `Vec<i32>`, `Vec<String>`, `Option<u8>`, `HashMap<&str, u32>`, `Result<T, E>`. The `<T>`, `<K, V>` is the generic-type machinery. Now you write your *own* generic types.
+---
+
+## What you'll learn
+
+- **Generics**: `fn draw_box<T: Drawable>(item: T)` — writing functions that work for many types
+- **Trait bounds**: `T: Display + Clone` — constraining what a generic can be
+- **Trait objects**: `Box<dyn Trait>` — picking the type at runtime
+- The difference between **monomorphisation** (generics) and **dynamic dispatch** (trait objects)
+- A small UI layout system: rows × columns, with a hover state
+
+---
+
+## The big idea
+
+You've been using generics implicitly since `Vec<T>` and `HashMap<K, V>`. Today you write your own.
+
+A **generic function** is a function whose type isn't fixed at the call site — it's *filled in* by the caller. `fn first<T>(v: &Vec<T>) -> &T { &v[0] }` works for any `T`. The compiler generates a version per type used (monomorphisation).
+
+A **trait object** (`Box<dyn Trait>`) goes the other way: instead of generating versions per type, the compiler holds a single function that walks a runtime vtable. Slower per call (one indirect jump) but flexible.
+
+Today's codex uses generics for the visible part — a `fn draw_entry<T: ElementInfo>(entry: &T)` — and trait objects in the codex's internal list because each entry has slightly different metadata. Both patterns in one feature.
+
+---
+
+## Concepts covered
+
+- `fn name<T: Trait>(x: T)` — generic function with trait bound
+- `struct Pair<A, B> { first: A, second: B }` — generic struct
+- `trait ElementInfo` — defining a small trait
+- `Box<dyn ElementInfo>` — heterogeneous list of trait objects
+- `where` clauses for complex bounds
+- `impl Trait` in return position
+- `let mouse_over = is_inside(swatch_rect, mouse_position());`
+
+---
+
+## Building towards `sand-sim`
+
+The codex is **the most player-facing UI** of v1.0. It's also the proof of concept for any future "menu" — settings, recipe browser, level select. The generic `draw_entry` is reusable enough that you'd build the entire pause menu the same way.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 19 finished. Recipes work. `Discoveries::is_unlocked` tells you what's available. The selector filters to discovered elements.
+
+### 1. The `ElementInfo` trait — 3 minutes
+
+In `src/elements.rs`, below the `Cell` impl:
 
 ```rust
-fn largest<T: PartialOrd>(list: &[T]) -> &T {
-    let mut largest = &list[0];
-    for item in list {
-        if item > largest {
-            largest = item;
+pub trait ElementInfo {
+    fn cell_type(&self) -> CellType;
+    fn name(&self) -> &'static str;
+    fn description(&self) -> &'static str;
+    fn colour(&self) -> Color;
+}
+
+/// A concrete record of metadata per element.
+pub struct ElementEntry {
+    pub cell_type:   CellType,
+    pub name:        &'static str,
+    pub description: &'static str,
+}
+
+impl ElementInfo for ElementEntry {
+    fn cell_type(&self)   -> CellType    { self.cell_type }
+    fn name(&self)        -> &'static str { self.name }
+    fn description(&self) -> &'static str { self.description }
+    fn colour(&self)      -> Color       { self.cell_type.colour() }
+}
+```
+
+A **trait** is a contract: "anything that implements `ElementInfo` provides these four methods." Same idea as interfaces in Java/C# but with much more powerful generics support.
+
+We define `ElementEntry` as the canonical implementor. We *could* implement `ElementInfo` for `CellType` directly, but having a separate struct lets each entry carry richer metadata (a description that doesn't belong on the enum).
+
+### 2. The element catalogue — 4 minutes
+
+```rust
+pub fn catalogue() -> Vec<ElementEntry> {
+    use CellType::*;
+    vec![
+        ElementEntry { cell_type: Sand,    name: "Sand",      description: "Loose granular solid; piles at the angle of repose." },
+        ElementEntry { cell_type: Water,   name: "Water",     description: "Flowing liquid; boils to steam at 100°C." },
+        ElementEntry { cell_type: Stone,   name: "Stone",     description: "Static solid. Dissolved by acid." },
+        ElementEntry { cell_type: Wood,    name: "Wood",      description: "Flammable solid; chars before igniting." },
+        ElementEntry { cell_type: Fire,    name: "Fire",      description: "Ignition source. Spreads probabilistically." },
+        ElementEntry { cell_type: Smoke,   name: "Smoke",     description: "Rises and dissipates." },
+        ElementEntry { cell_type: Oil,     name: "Oil",       description: "Dense flammable liquid. Floats on water." },
+        ElementEntry { cell_type: OilFire, name: "Oil Fire",  description: "Hot, fast-burning oil." },
+        ElementEntry { cell_type: Steam,   name: "Steam",     description: "Rises; condenses below 60°C." },
+        ElementEntry { cell_type: Acid,    name: "Acid",      description: "Corrosive liquid. Dissolves stone and wood." },
+        ElementEntry { cell_type: Lava,    name: "Lava",      description: "Hot molten rock. Solidifies on water contact." },
+        ElementEntry { cell_type: Ice,     name: "Ice",       description: "Cold solid. Melts above 0°C." },
+    ]
+}
+```
+
+### 3. The generic `draw_entry` function — 5 minutes
+
+Create `src/codex.rs`:
+
+```rust
+use macroquad::prelude::*;
+use crate::elements::{ElementInfo, ElementEntry, catalogue};
+use crate::recipes::Discoveries;
+
+const CODEX_COLS: usize = 4;
+const CODEX_TILE: f32   = 96.0;
+const CODEX_PAD:  f32   = 16.0;
+
+pub fn draw_codex(discoveries: &Discoveries) {
+    // Dim the background.
+    draw_rectangle(0.0, 0.0, screen_width(), screen_height(), Color::new(0.0, 0.0, 0.0, 0.75));
+
+    let entries = catalogue();
+    let origin_x = (screen_width()  - (CODEX_COLS as f32 * (CODEX_TILE + CODEX_PAD))) / 2.0;
+    let origin_y = 60.0;
+    let (mx, my) = mouse_position();
+    let mut hover: Option<&ElementEntry> = None;
+
+    for (i, entry) in entries.iter().enumerate() {
+        let row = i / CODEX_COLS;
+        let col = i % CODEX_COLS;
+        let x = origin_x + col as f32 * (CODEX_TILE + CODEX_PAD);
+        let y = origin_y + row as f32 * (CODEX_TILE + CODEX_PAD);
+
+        let unlocked = discoveries.is_unlocked(entry.cell_type());
+        draw_entry(entry, x, y, CODEX_TILE, unlocked);
+
+        // Track hover.
+        if mx >= x && mx < x + CODEX_TILE && my >= y && my < y + CODEX_TILE {
+            hover = Some(entry);
         }
     }
-    largest
+
+    if let Some(entry) = hover {
+        draw_tooltip(entry, discoveries.is_unlocked(entry.cell_type()), mx, my);
+    }
 }
 
-largest(&[1, 2, 3]);                  // works: i32 is PartialOrd
-largest(&["a", "b", "c"]);            // works: &str is PartialOrd
-largest(&[Vec::<i32>::new()]);        // doesn't compile: Vec<i32> isn't PartialOrd
-```
+fn draw_entry<T: ElementInfo>(entry: &T, x: f32, y: f32, size: f32, unlocked: bool) {
+    if unlocked {
+        draw_rectangle(x, y, size, size, entry.colour());
+        draw_text(entry.name(), x, y + size + 16.0, 18.0, WHITE);
+    } else {
+        // Greyed-out silhouette.
+        draw_rectangle(x, y, size, size, Color::new(0.20, 0.20, 0.20, 1.0));
+        draw_text("???", x + size / 2.0 - 14.0, y + size / 2.0 + 8.0, 24.0, DARKGRAY);
+    }
+    draw_rectangle_lines(x, y, size, size, 2.0, GRAY);
+}
 
-The angle brackets `<T: PartialOrd>` say "this function works for any type T, as long as T can be compared with `>`". The `T: PartialOrd` part is a **trait bound** — it constrains what T can be.
-
-Two flavours of polymorphism:
-
-- **Static dispatch** (generics + monomorphisation) — the compiler generates a separate copy of the function for each concrete type used. Zero runtime cost. Bigger binaries.
-- **Dynamic dispatch** (`Box<dyn Trait>`) — one copy of the code, type figured out at runtime via a hidden vtable. Tiny runtime cost, smaller binaries, more flexibility.
-
-You'll meet both today.
-
-## Concepts Covered
-
-- Generic functions: `fn foo<T>(x: T)`
-- Generic structs: `struct Pair<T, U> { a: T, b: U }`
-- Trait bounds: `<T: Display + Clone>`
-- `where` clauses for readable bounds
-- `impl Trait` shorthand in arguments and return types
-- `Box<dyn Trait>` — heap allocation + dynamic dispatch
-- Trait objects vs generics — when to choose which
-- Lifetimes — `'a` syntax, when the compiler insists on them
-
-## Building Towards `midi-synth`
-
-The synth needs to handle different *kinds* of waveform-generators (sine, square, sawtooth, triangle, perhaps user-supplied) behind a single interface. Two ways to do that:
-
-- Generics — `struct Voice<O: Iterator<Item = f32>>` — fast, but each `Voice<Sine>` and `Voice<Square>` are different types.
-- Trait objects — `struct Voice { osc: Box<dyn Iterator<Item = f32>> }` — one type, runtime-flexible.
-
-Today you build both and see the trade-off in real code.
-
----
-
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-3/session-20/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-3/session-20/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
-
-## Step-by-Step Walkthrough
-
-### 1. Generic functions
-
-```rust
-fn pair<T>(a: T, b: T) -> (T, T) { (a, b) }
-
-let p1 = pair(1, 2);              // (i32, i32)
-let p2 = pair("hi", "there");     // (&str, &str)
-```
-
-The compiler generates two specialised versions of `pair`: one for `i32`, one for `&str`. This is **monomorphisation** — single source, multiple compiled versions.
-
-### 2. Trait bounds
-
-`<T>` alone says "any type" — so you can do almost nothing inside the function. To do useful work you constrain T:
-
-```rust
-use std::fmt::Display;
-
-fn announce<T: Display>(x: T) {
-    println!(">> {}", x);
+fn draw_tooltip<T: ElementInfo>(entry: &T, unlocked: bool, mx: f32, my: f32) {
+    let text = if unlocked { entry.description() } else { "Undiscovered." };
+    let tw   = measure_text(text, None, 16, 1.0).width;
+    draw_rectangle(mx + 12.0, my + 12.0, tw + 16.0, 30.0, Color::new(0.10, 0.10, 0.15, 0.95));
+    draw_text(text, mx + 20.0, my + 32.0, 16.0, WHITE);
 }
 ```
 
-`T: Display` means "T must implement Display" — only types that implement Display can be passed in. Inside the function, the compiler trusts `T` has `Display`'s methods.
+Three things to notice:
 
-Multiple bounds:
+- **`fn draw_entry<T: ElementInfo>(entry: &T, ...)`** — the function is generic over any `T` that implements `ElementInfo`. The compiler generates a specialised version for every `T` it sees. Today only `ElementEntry` flows through, so only one version. *Future:* if you add `WeatherInfo` or `EnemyInfo` traits, the same UI code works.
+- **`measure_text(text, None, 16, 1.0)`** — macroquad's text-measurer. Returns a `TextDimensions { width, height, offset_y }`. Used to size the tooltip background.
+- **`Option<&ElementEntry>`** as the hover state is the idiomatic "one of these or nothing" Rust shape. No need for a sentinel "no hover" value.
+
+### 4. The TAB key — 1 minute
+
+In `main.rs` or `ui::handle_input`:
 
 ```rust
-fn describe<T: Display + Clone>(x: T) -> T {
-    println!("{}", x);
-    x.clone()
-}
+let mut codex_open = false;
+
+if is_key_pressed(KeyCode::Tab) { codex_open = !codex_open; }
 ```
 
-Or with a `where` clause for legibility:
+In the render block:
 
 ```rust
-fn describe<T>(x: T) -> T
-where
-    T: Display + Clone,
-{
-    println!("{}", x);
-    x.clone()
-}
+        clear_background(BLACK);
+        render_grid(&grid, heatmap);
+        draw_selector(selected, brush_radius, &discoveries);
+        draw_legend();
+        draw_hud(&counts);
+        if codex_open {
+            codex::draw_codex(&discoveries);
+        }
 ```
 
-Same thing. `where` is preferred when bounds get long.
+**Save. Run.** Press `TAB`. **The codex appears, dimming the world behind it.** Discovered elements glow with their colour and name; undiscovered ones are grey ??? squares. Hover one: tooltip appears. Press `TAB` again to close.
 
-### 3. Generic structs
+> **The Wow Moment.** Build a long session. Don't open the codex. Play for ten minutes and trigger as many recipes as you can. *Then* press `TAB`. **You see, at a glance, the entire scope of your chemistry — every element you've found in colour, every one you haven't as a mystery.** That feeling — "what's behind the grey squares?" — is the whole reason people play discovery games for 100 hours. **You shipped that feeling in 200 lines.**
+
+### 5. (Optional) Animations — 4 minutes
+
+A satisfying touch: just-unlocked entries pulse for two seconds.
 
 ```rust
-struct Pair<T> {
-    first: T,
-    second: T,
+// In Discoveries:
+pub struct Discoveries {
+    pub unlocked: Vec<CellType>,
+    pub recently_unlocked: Vec<(CellType, f32)>,  // (which, time_unlocked)
 }
 
-impl<T: std::fmt::Display> Pair<T> {
-    fn announce(&self) {
-        println!("first: {}, second: {}", self.first, self.second);
+// On unlock:
+self.recently_unlocked.push((t, get_time() as f32));
+
+// In draw_entry:
+if let Some((_, time)) = recently_unlocked.iter().find(|(t, _)| *t == entry.cell_type()) {
+    let age = get_time() as f32 - time;
+    if age < 2.0 {
+        let pulse = (age * 6.0).sin() * 0.3 + 1.0;
+        let scaled_size = size * pulse;
+        // Draw at scaled_size, centred on the tile centre
     }
 }
 ```
 
-Note `impl<T: Display> Pair<T>` — bounds go on the impl block. You can have multiple impl blocks for different bounds:
+(Sketch — fill in for real.)
+
+### 6. (Optional) Heterogeneous list via trait objects — 4 minutes
+
+Right now the catalogue holds only `ElementEntry`s. What if some entries needed *different* shapes — e.g. an entry that points at a recipe rather than an element? Trait objects let you mix:
 
 ```rust
-impl<T> Pair<T> {
-    fn new(a: T, b: T) -> Self { Self { first: a, second: b } }
-}
-
-impl<T: PartialOrd> Pair<T> {
-    fn larger(&self) -> &T {
-        if self.first > self.second { &self.first } else { &self.second }
+fn rich_catalogue() -> Vec<Box<dyn ElementInfo>> {
+    let mut out: Vec<Box<dyn ElementInfo>> = Vec::new();
+    for e in catalogue() {
+        out.push(Box::new(e));
     }
+    // Could also push Box::new(some_other_thing_implementing_ElementInfo)
+    out
 }
 ```
 
-`Pair::new` works for *any* `T`. `larger` only for ones that implement `PartialOrd`.
+This costs you compile-time monomorphisation in exchange for runtime flexibility. For `sand-sim` v1.0 the generic version is fine — included here for the conceptual contrast.
 
-### 4. `impl Trait` shorthand
+---
 
-For simple cases, you can drop the explicit generic and write `impl Trait`:
+## Linux (Ubuntu) note
+
+Generics compile separately per type. Adding a new generic implementor (new struct implementing `ElementInfo`) makes incremental builds slightly slower. To see the cost on Ubuntu:
+
+```bash
+time cargo build --release      # before adding a new type
+# add a struct + impl
+time cargo build --release      # after; usually +1-3 seconds
+```
+
+For your project's size this is invisible. For a 100,000-line codebase, generics-bloat is a known issue and `dyn Trait` is sometimes preferred for build-time reasons.
+
+**HiDPI tooltip positioning.** If you're on a 4K Ubuntu laptop at 200% scaling, the tooltip might appear off-screen-right when the mouse is near the right edge. Clamp the tooltip x to `screen_width() - tooltip_width - 8.0`. Simple fix; mention this in code.
+
+**Wayland transparency.** The codex background uses alpha `0.75` to dim the world. Most Ubuntu Wayland compositors handle this correctly. If your codex appears opaque black instead of semi-transparent, your compositor is dropping alpha — verify by rendering a fully-transparent rectangle (`Color::new(1.0, 0.0, 0.0, 0.5)` should look pink, not red). If broken, draw a colour-mixed background instead of relying on alpha blending.
+
+---
+
+## Common mistakes
+
+### `error: trait 'ElementInfo' is not object-safe`
+
+If you accidentally added a method to `ElementInfo` that returns `Self` (e.g. `fn clone(&self) -> Self`), the trait can no longer be made into a trait object. Object-safe traits can only use `&self`/`&mut self`/`self` receivers and can't have generic methods or return `Self`. Either drop the offending method or split the trait into two.
+
+### Generic version compiles, trait-object version doesn't
+
+Generic functions are monomorphised — each type gets its own machine code, which can take advantage of inlining. Trait objects share one machine-code body, indirected through a vtable. If a method returns `Self` or takes a generic, you can't put it on a trait object. Generally: start with generics; switch to `dyn` only when you need runtime flexibility.
+
+### Codex tiles overlap or wrap weirdly
+
+The tile sizes and spacing are based on `screen_width()`. If you resize the window, the layout still uses the *initial* width. Fix: read `screen_width()` inside `draw_codex` so the layout re-measures each frame.
+
+### Tooltip flickers when the mouse hovers near tile borders
+
+You're computing hover as `>= x && < x + size` which is correct, but the tooltip itself can overlap a neighbouring tile, briefly stealing the hover. Position the tooltip offset by `(12.0, 12.0)` from the mouse (as above) and clamp to screen bounds.
+
+### `error[E0277]: 'T' doesn't implement 'Sized'`
+
+Your generic constraint missed `Sized`. By default, every generic parameter has an implicit `Sized` bound — only loosen it with `T: ?Sized` if you specifically want unsized types like `[T]` or `dyn Trait`. For `ElementInfo` impls (all owned structs), the default `Sized` bound is what you want.
+
+### Discoveries persistence breaks after adding fields
+
+If you save with v1, add `recently_unlocked`, and try to load — `serde_json` complains about missing fields. Either bump the version (refuse old saves), or use `#[serde(default)]` on the new field:
 
 ```rust
-fn announce(x: impl Display) {                 // same as fn announce<T: Display>(x: T)
-    println!("{}", x);
-}
-
-fn make_iter() -> impl Iterator<Item = i32> {  // returns "some iterator of i32"
-    (1..=10).filter(|n| n % 2 == 0)
-}
-```
-
-`impl Trait` in argument position is just sugar for a generic. In return position it's more useful — it lets you return a complex type without naming it. But the *exact* type is fixed at the function level; the caller doesn't get to choose.
-
-### 5. Dynamic dispatch with `Box<dyn Trait>`
-
-Sometimes you need a *runtime* choice between several concrete types behind one trait. Generics don't help — they're picked at compile time. Use a **trait object**:
-
-```rust
-trait Greeter { fn greet(&self) -> String; }
-
-struct Hello;
-impl Greeter for Hello { fn greet(&self) -> String { String::from("Hello!") } }
-
-struct Hej;
-impl Greeter for Hej { fn greet(&self) -> String { String::from("Hej!") } }
-
-let greeters: Vec<Box<dyn Greeter>> = vec![Box::new(Hello), Box::new(Hej)];
-for g in &greeters {
-    println!("{}", g.greet());
-}
-```
-
-`dyn Greeter` is a **trait object** — a fat pointer that stores both a pointer to the data and a vtable for the trait's methods. `Box<...>` puts it on the heap (required because the size of `dyn Greeter` isn't known at compile time).
-
-This is how you store a heterogeneous list of "things that all do X". Generics can't do this — `Vec<T>` requires every element to be the same `T`.
-
-### 6. Lifetimes — the bare minimum
-
-You'll see `'a` (read "tick a") everywhere in error messages. Here's the punchline: when you have a function returning a reference, the compiler needs to know which input the reference came from. For 99% of cases, it figures it out automatically. Sometimes it needs a hint:
-
-```rust
-fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
-    if a.len() > b.len() { a } else { b }
-}
-```
-
-`<'a>` declares a lifetime parameter. `&'a str` reads "a `&str` borrowed for at least lifetime `'a`". The function signature says: "all three references share a lifetime `'a` — the returned one lives at least as long as both inputs". The compiler enforces this.
-
-If you see `error: missing lifetime specifier`, you've returned a reference and the compiler can't figure out the source. Annotating with `'a` like above usually fixes it.
-
-You will rarely write lifetime annotations by hand in this course — it's mostly a *reading* skill. We're flagging it now so the syntax doesn't surprise you.
-
-### 7. The example: a generic and a dynamic oscillator
-
-`examples/generic_oscillator/src/main.rs` shows both styles side by side. A `Voice<O>` parameterised by oscillator type (static), and a `DynVoice` storing `Box<dyn Iterator<Item = f32>>` (dynamic). Identical behaviour, very different machine code.
-
----
-
-## Generics vs Trait Objects: Picking
-
-| Question | Generics | Trait objects (`dyn`) |
-|---|---|---|
-| Speed | Faster (no vtable) | Tiny vtable cost |
-| Binary size | Larger (one copy per type) | Smaller |
-| Flexibility | Type fixed at compile | Type chosen at runtime |
-| Heterogeneous collections | No | Yes |
-| Method-call ergonomics | Same | Same |
-
-**Default to generics. Reach for `Box<dyn Trait>` when you need a heterogeneous collection or when binary size matters.**
-
----
-
-## Common Mistakes
-
-- **Trying to compare two `T`s without `T: PartialOrd`** — `if a > b` won't compile until you add the bound.
-- **`Vec<dyn Trait>` directly** — doesn't compile, because `dyn Trait` has unknown size. Always wrap: `Vec<Box<dyn Trait>>`.
-- **Returning two different concrete types from one branch** — `if cond { Hello } else { Hej }` fails type-check. Either return `Box<dyn Greeter>` for both branches, or refactor.
-- **Lifetime annotations look scary** — they almost always come out where you'd expect once you read the error. Don't panic.
-
----
-
-## Session Challenge
-
-Take the `Oscillator` from Session 19. Build:
-
-1. A `Voice<O: Iterator<Item = f32>>` struct that holds an oscillator and a `gain: f32`. `next()` returns the next sample multiplied by `gain`. (Generic — fast.)
-2. A `DynVoice` struct that holds `Box<dyn Iterator<Item = f32>>` and `gain: f32`. (Dynamic — flexible.)
-3. A `Vec<DynVoice>` containing one of each waveform type. Iterate and print the first five samples of each.
-
-Time both versions on a 1-million-sample buffer with `std::time::Instant`. Note the difference — generics will probably be slightly faster, but you'll find both are *fast enough* for audio.
-
----
-
-## Quick Reference
-
-```rust
-// Generic function with bounds
-fn show<T: std::fmt::Display + Clone>(x: T) -> T {
-    println!("{}", x); x.clone()
-}
-
-// where clause
-fn show2<T>(x: T) -> T
-where T: std::fmt::Display + Clone {
-    println!("{}", x); x.clone()
-}
-
-// Generic struct
-struct Pair<A, B> { a: A, b: B }
-impl<A, B> Pair<A, B> {
-    fn new(a: A, b: B) -> Self { Self { a, b } }
-}
-
-// impl Trait
-fn doubled() -> impl Iterator<Item = i32> { (1..=5).map(|n| n * 2) }
-
-// Trait object
-trait Speak { fn say(&self); }
-let speakers: Vec<Box<dyn Speak>> = vec![/* ... */];
-
-// Lifetimes
-fn first_word<'a>(s: &'a str) -> &'a str {
-    s.split(' ').next().unwrap_or(s)
-}
+#[serde(default)]
+pub recently_unlocked: Vec<(CellType, f32)>,
 ```
 
 ---
 
-## Further Reading
+## Session challenge
 
-Curated extra material on the topics covered in this session (Generics and Advanced Traits). All free; all current as of writing.
+Pick one — no solution provided.
 
-- [**The Rust Book** — *Generic Types, Traits, and Lifetimes* (chapter 10)](https://doc.rust-lang.org/book/ch10-00-generics.html) — The full story, including monomorphisation.
-- [**The Rust Book** — *Advanced Traits* (19.2)](https://doc.rust-lang.org/book/ch19-03-advanced-traits.html) — Associated types, default type parameters, supertraits, the newtype pattern.
-- [**The Rustonomicon** — *for the unsafe and curious*](https://doc.rust-lang.org/nomicon/) — When you outgrow the Book, this is the next book. Difficult; brilliant.
-- [**Jon Gjengset — *Crust of Rust* video series**](https://www.youtube.com/playlist?list=PLqbS7AVVErFiWDOAVrPt7aYmnuuOLYvOa) — Long-form deep-dives by a Rust expert. The *Iterators* and *Lifetimes* episodes pair perfectly with this session.
+1. **Codex sort order.** Show discovered elements first (in discovery order), then undiscovered. Or: alphabetical. Or: by category (solid/liquid/gas/reactive). Add a key (`O`) to cycle sort modes.
+2. **Codex search.** Type a letter while the codex is open to filter to entries whose name starts with that letter. Show "type a letter…" as a hint.
+3. **A second trait, `IsLiquid`.** Implement it for `ElementEntry` based on cell_type. Filter the codex to only liquids with a toggle key.
+4. **Display recipe hints.** For each undiscovered entry, show a one-line cryptic hint ("found near boiling water") instead of `???`. Store hints alongside the recipe.
+
+---
+
+## Quick reference
+
+| What | Code |
+|---|---|
+| Generic function | `fn f<T: Trait>(x: T)` |
+| Multiple bounds | `fn f<T: A + B>(x: T)` |
+| `where` clause | `fn f<T>() where T: A + B { ... }` |
+| Generic struct | `struct Pair<A, B> { first: A, second: B }` |
+| Trait | `trait Foo { fn bar(&self) -> u32; }` |
+| Trait object | `Box<dyn Foo>` |
+| `impl Trait` arg | `fn f(x: impl Trait)` |
+| `impl Trait` return | `fn make() -> impl Trait { ... }` |
+| Measure text | `measure_text(s, font, size, scale)` |
 
 ---
 
-## Stuck?
+## DofE log reminder
 
-You're not the first. Three places that work when you're properly stuck:
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 20**. Worth recording:
 
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
-
----
-## DofE Log Reminder
-
-Row 20. Final sprint: four sessions left. They're all the project — make sure your dev setup is happy.
+- A screenshot of the codex showing some discovered and some undiscovered entries — the visible *progression*
+- Your sentence on "generics vs trait objects" — when would you reach for each? (Assessors will probe this in interviews if you ever apply for a junior Rust role.)

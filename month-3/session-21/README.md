@@ -1,165 +1,331 @@
-# Session 21 — Audio Engine: Waveforms, ADSR, and your first WAV with `hound`
+# Session 21 — Gunpowder and Glass
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
+> **Stuck on a word?** Things like *move closure*, *flat_map*, *chain*, *explosion radius* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
+---
 
-> *"This week we replace our hand-rolled WAV writer with a real crate, then build the heart of a synthesiser: an oscillator with an envelope."*
+## The Goal
 
-## What You'll Learn
+By the end of this session **gunpowder** detonates when touched by fire (radial explosion in an N-cell radius), and **glass** is forged where lava meets sand. Both elements are gated behind their recipes from Session 19. The detonation algorithm is built with iterator chains and `move` closures — Rust's most expressive iterator pattern, used in earnest for the first time.
 
-- Pulling in a third-party crate (`hound`) and reading its docs.
-- Designing a small audio engine (Waveform → Oscillator → Envelope → samples).
-- What **ADSR** means and why every synth ever made has it.
-- Using `clap` for ergonomic CLI parsing.
+---
 
-## The Big Idea
+## What you'll learn
 
-In session 18 you wrote a WAV file by hand: 44 bytes of header, then 16-bit PCM samples. That was important — you now know what's in the file. From here on we'll use [`hound`](https://docs.rs/hound), the de-facto Rust WAV crate, because re-implementing format headers isn't a great use of your time.
+- `move` closures — capturing variables by ownership, not reference
+- `.flat_map(...)` for "expand each item into many" — used to enumerate explosion radius
+- `.chain(...)` — concatenating iterators
+- Computing a circle of cell offsets with iterators alone, no nested loops
+- Bringing it all together: a single expression that lists every affected cell
 
-The interesting bit this week is the **engine** — a small set of types that turn "MIDI note 69 for 2 seconds, sine wave" into a `Vec<f32>` of audio samples. Specifically:
+---
 
-```
-Waveform (enum) ─┐
-                 ├→ Oscillator ─→ ADSR multiplier ─→ Vec<f32>
-midi_to_freq ────┘
-```
+## The big idea
 
-Every synth in the world is built on this exact pattern.
-
-## Concepts Covered
-
-- Adding crate dependencies in `Cargo.toml`.
-- Modules across files (`mod synth; mod wav;`) — a recap of session 17.
-- The **ADSR** envelope: Attack, Decay, Sustain, Release.
-- `clap`'s `#[derive(Parser)]` macro for CLI args.
-
-## Building Towards `midi-synth`
-
-This session creates `synth.rs`, `wav.rs`, and a `main.rs` that handles **single-note** mode only. After today:
-
-```bash
-cargo run -- --note 69 --duration 2 --waveform sine --out a4.wav
-```
-
-…produces a real `.wav` file you can play.
-
-You'll add `--midi-file` (session 22), `--live` (session 23), and `--chord` (session 24) over the next three weeks.
-
-> 💡 **Where to work today.** This is a project session, so you'll be inside the project folder, not the session folder. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-3/project/midi-synth/starter        # your work-in-progress
-> cargo run -- <args>
-> ```
->
-> The reference implementation lives in `month-3/project/midi-synth/solution/` — peek only when you're properly stuck. All `cargo run` commands shown below assume you're inside `month-3/project/midi-synth/starter/`.
-
-## Step-by-Step Walkthrough
-
-### 1. Open the `starter/` project
-
-```bash
-cd month-3/project/midi-synth/starter
-cargo build
-```
-
-The first build pulls in ~80 crates — that's normal. You'll see warnings about unused TODOs. That's the goal: turn warnings into working code.
-
-### 2. Implement `synth.rs`
-
-The skeleton has function signatures and TODOs. Fill them in:
-
-- `Waveform::parse(s: &str)` — match `"sine" | "square" | "saw" | "triangle"`.
-- `midi_to_freq(note: u8)` — `440.0 * 2f32.powf((note as f32 - 69.0) / 12.0)`.
-- `Oscillator::sample()` — track `sample_index`, compute `t = idx / sample_rate`, then the waveform.
-- `Adsr::amplitude(...)` — return a value in `[0.0, 1.0]` based on time and whether the note has been released.
-- `render_note(...)` — loop `total_samples` times, multiply oscillator by envelope by velocity.
-
-### 3. ADSR explained
-
-```
-Amplitude
-  1.0 │   /\
-      │  /  \____________   ← sustain level
-      │ /    sustain     \
-      │/                  \
-  0.0 └──────────────────────→ time
-       A   D     S          R
-```
-
-- **Attack**: time to ramp from 0 → 1 when key pressed.
-- **Decay**: time to fall from 1 → sustain level.
-- **Sustain**: level held while key is held down.
-- **Release**: time to fall from sustain → 0 when key is released.
-
-For an offline render, "key released" means "near the end of the note's duration".
-
-### 4. Run it
-
-```bash
-cargo run -- --note 69 --duration 1 --waveform sine --out a4.wav
-file a4.wav   # → RIFF (little-endian) data, WAVE audio, ... mono 44100 Hz
-```
-
-Open `a4.wav` in any audio player. You should hear a clean A note with a soft attack and release (no clicks!).
-
-## Common Mistakes
-
-- **Clicks at start/end**: your ADSR isn't ramping. The attack and release stop the speaker membrane jumping suddenly.
-- **`f32` vs `f64`**: `hound` accepts `i16` samples. Multiply by `i16::MAX` and clamp to `[-1.0, 1.0]` first.
-- **Note 69 ≠ 440 Hz**: check `midi_to_freq` — `(69 - 69) / 12 = 0`, `2^0 = 1`, `440 * 1 = 440`. ✓
-- **Forgetting `mod synth;`** in `main.rs` — same gotcha as session 17.
-
-## Session Challenge
-
-1. Add a 5th waveform — `--waveform noise` — that returns random `f32` in `[-1.0, 1.0]` (use `fastrand`).
-2. Make `--duration` accept fractions (`--duration 0.5`). It already does in `clap` — verify.
-3. Render the same note with all four waveforms and compare them in your audio player. Which sounds the warmest? Which is harshest? Write down why in your DofE log.
-
-## Quick Reference
+The simple explosion algorithm has two nested `for` loops:
 
 ```rust
-// From a MIDI note number to frequency in Hz:
-fn midi_to_freq(note: u8) -> f32 {
-    440.0 * 2f32.powf((note as f32 - 69.0) / 12.0)
+for dr in -radius..=radius {
+    for dc in -radius..=radius {
+        if dr*dr + dc*dc <= radius*radius {
+            // affect (row+dr, col+dc)
+        }
+    }
 }
-
-// Writing a WAV with hound:
-let spec = hound::WavSpec {
-    channels: 1, sample_rate: 44_100,
-    bits_per_sample: 16, sample_format: hound::SampleFormat::Int,
-};
-let mut writer = hound::WavWriter::create("out.wav", spec)?;
-for s in samples { writer.write_sample((s * i16::MAX as f32) as i16)?; }
-writer.finalize()?;
 ```
 
-## Further Reading
+That works. But the iterator-chain version reads as a *description* of the affected cells:
 
-Curated extra material on the topics covered in this session (Audio Engine — Waveforms, ADSR, `hound`). All free; all current as of writing.
+```rust
+let affected = (-radius..=radius)
+    .flat_map(move |dr| (-radius..=radius).map(move |dc| (dr, dc)))
+    .filter(move |(dr, dc)| dr*dr + dc*dc <= radius*radius);
+```
 
-- [**WAV file format spec** — sapp.org](http://soundfile.sapp.org/doc/WaveFormat/) — The canonical one-page reference for the RIFF/WAVE container we're writing into.
-- [**Wikipedia — *Envelope (music)***](https://en.wikipedia.org/wiki/Envelope_(music)) — Background on ADSR (Attack–Decay–Sustain–Release) envelopes.
-- [**`hound` crate documentation**](https://docs.rs/hound/latest/hound/) — The crate we're using to write WAV files. Tiny API; worth reading top-to-bottom.
-- [**3Blue1Brown — *But what is the Fourier Transform? A visual introduction***](https://www.youtube.com/watch?v=spUNpyF58BY) — Why a sawtooth sounds bright and a sine sounds pure. Not required for the project; absolutely worth watching.
-- [**Sound on Sound — *Synth Secrets* archive**](https://www.soundonsound.com/series/synth-secrets-1996-2004) — 63-part legendary series covering every aspect of subtractive synthesis. The first ~10 articles are the foundation.
+That iterator is then consumable: `affected.for_each(|(dr, dc)| { ... })`. Composable, testable, named. Same machine code.
+
+**Today's win is twofold**: gameplay (gunpowder and glass make the simulation *fun*), and language (move closures land properly as the syntax that makes complex iterator chains work).
+
+---
+
+## Concepts covered
+
+- `move` keyword on closures
+- `..=` inclusive range vs `..` half-open range
+- `.flat_map(closure -> iterator)`
+- `.chain(other)` — sequential concatenation of iterators
+- Storing iterator results in a `Vec` with `.collect()`
+- Borrow-checker subtleties solved by `move`
 
 ---
 
-## Stuck?
+## Building towards `sand-sim`
 
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+Gunpowder + glass are the **showy** elements that demos love. They're also natural recipe candidates (gunpowder is unlocked by fire + smoke; glass by sand + lava). Today's iterator-chain pattern is reused in Session 22 for the time-aware concrete-and-rust simulation and in Session 23 for the title-screen particle background.
 
 ---
-## DofE Log Reminder
 
-Open `dfe/session-log.md`, find row 21, and write 1–3 sentences about what you built today. Mention: which waveform sounds the most "synth-y" to you and why you think that is.
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 20 finished. Codex works. Discoveries persist. Ready to add two new elements.
+
+### 1. Add the variants — 2 minutes
+
+In `src/elements.rs`:
+
+```rust
+pub enum CellType {
+    // ...
+    Gunpowder,
+    Glass,
+}
+
+// colour:
+CellType::Gunpowder => Color::new(0.40, 0.30, 0.25, 1.0),  // dark brown, like sand+coal
+CellType::Glass     => Color::new(0.80, 0.90, 1.00, 0.50), // pale, transparent
+
+// density:
+CellType::Gunpowder => 130,
+CellType::Glass     => 220,
+```
+
+Glass is heavier than stone (denser, like real soda-lime glass). Gunpowder is light, settles into piles like sand.
+
+### 2. Gunpowder behaves like sand — 1 minute
+
+In `simulation.rs`, dispatch gunpowder to the existing `update_sand` (it falls and stacks the same way):
+
+```rust
+match cell_type {
+    CellType::Sand | CellType::Gunpowder => update_sand(grid, row, col),
+    // ...
+}
+```
+
+### 3. Glass is static — 1 minute
+
+Glass is solid like stone. No update function needed.
+
+### 4. The explosion — 8 minutes
+
+The big new code. In `simulation.rs`:
+
+```rust
+const GUNPOWDER_RADIUS: i32 = 6;
+const GUNPOWDER_HEAT:   f32 = 800.0;
+
+/// Detonate gunpowder at (row, col): empty the radius, add heat to the perimeter.
+pub fn detonate(grid: &mut Vec<Vec<Cell>>, row: usize, col: usize) {
+    let radius = GUNPOWDER_RADIUS;
+
+    // Build the list of affected offsets using iterators (today's exercise).
+    let affected: Vec<(i32, i32)> = (-radius..=radius)
+        .flat_map(move |dr| (-radius..=radius).map(move |dc| (dr, dc)))
+        .filter(move |(dr, dc)| dr*dr + dc*dc <= radius*radius)
+        .collect();
+
+    for (dr, dc) in &affected {
+        let nr = row as i32 + dr;
+        let nc = col as i32 + dc;
+        if nr < 0 || nr >= ROWS as i32 || nc < 0 || nc >= COLS as i32 { continue; }
+        let (nr, nc) = (nr as usize, nc as usize);
+        let dist2 = (dr*dr + dc*dc) as f32;
+
+        if dist2 < (radius as f32 * 0.5).powi(2) {
+            // Inner core: vaporise everything to fire.
+            grid[nr][nc] = Cell {
+                cell_type:   CellType::Fire,
+                temperature: GUNPOWDER_HEAT,
+                lifetime:    60,
+            };
+        } else {
+            // Outer ring: scatter (set to empty) and add heat.
+            if !grid[nr][nc].is_empty() && fastrand::f32() < 0.7 {
+                grid[nr][nc] = Cell::empty();
+            }
+            grid[nr][nc].heat(GUNPOWDER_HEAT * (1.0 - dist2.sqrt() / radius as f32));
+        }
+    }
+}
+
+/// Per-frame: any gunpowder with a hot neighbour detonates.
+fn check_gunpowder_ignition(grid: &mut Vec<Vec<Cell>>) {
+    let mut to_detonate: Vec<(usize, usize)> = Vec::new();
+    for r in 0..ROWS {
+        for c in 0..COLS {
+            if grid[r][c].cell_type != CellType::Gunpowder { continue; }
+            for (dr, dc) in NEIGHBOURS_4 {
+                let nr = r as i32 + dr;
+                let nc = c as i32 + dc;
+                if nr < 0 || nr >= ROWS as i32 || nc < 0 || nc >= COLS as i32 { continue; }
+                let n = grid[nr as usize][nc as usize];
+                if matches!(n.cell_type, CellType::Fire | CellType::OilFire | CellType::Lava)
+                    || n.temperature > 250.0 {
+                    to_detonate.push((r, c));
+                    break;
+                }
+            }
+        }
+    }
+    for (r, c) in to_detonate {
+        detonate(grid, r, c);
+    }
+}
+```
+
+Call it from `step`, after `try_react` and before the rising/falling passes:
+
+```rust
+pub fn step(grid: &mut Vec<Vec<Cell>>) {
+    reaction_pass(grid);
+    check_gunpowder_ignition(grid);
+    rising_pass(grid);
+    falling_pass(grid);
+    cool_pass(grid);
+}
+```
+
+The `move` keyword in `flat_map(move |dr| ...)` is necessary because the inner closure (`map(move |dc| (dr, dc))`) captures `dr` by value — without `move`, `dr` would be borrowed from the outer closure's environment and the borrow checker would complain that the borrow doesn't live long enough.
+
+This is the most common single-line idiom that confuses Rust learners. The rule is simple: **when nesting closures that produce iterators, `move` the outer closure(s) so the inner ones can capture by value.**
+
+### 5. Glass formation — 4 minutes
+
+Glass is made by sand + lava in the reactions table. In `reactions.rs`:
+
+```rust
+    // -- Glass formation --
+    // Sand + Lava: glass + lava (lava persists, sand fuses).
+    r.insert((Sand, Lava), ReactionOutcome::replace_both(Glass, Lava, 80.0));
+    r.insert((Lava, Sand), ReactionOutcome::replace_both(Lava, Glass, 80.0));
+```
+
+That's it for glass — three lines.
+
+### 6. Recipe gates — 2 minutes
+
+In `recipes.rs`:
+
+```rust
+    // Gunpowder: discovered by holding fire near smoke (charcoal proxy).
+    recipes.push(Recipe {
+        name: "Gunpowder",
+        unlocks: CellType::Gunpowder,
+        predicate: Box::new(|grid| {
+            adjacent_pair(grid, CellType::Fire, CellType::Smoke)
+        }),
+    });
+
+    // Glass: discovered the first time sand-and-lava meet.
+    recipes.push(Recipe {
+        name: "Glass",
+        unlocks: CellType::Glass,
+        predicate: Box::new(|grid| {
+            adjacent_pair(grid, CellType::Sand, CellType::Lava)
+        }),
+    });
+```
+
+### 7. Optional: visual shockwave — 3 minutes
+
+A two-frame yellow ring at the explosion radius is a polish touch:
+
+```rust
+// In detonate, after the cell-affecting loop:
+flash_ring(row, col, radius);
+
+fn flash_ring(_r: usize, _c: usize, _radius: i32) {
+    // Stash (r, c, radius, time) in a global Vec<EffectMarker> and let
+    // rendering.rs draw a yellow circle outline that fades over 12 frames.
+}
+```
+
+Adds ~30 lines for a noticeable visual upgrade.
+
+**Save. Run.** Discover both elements (place sand next to lava → glass unlocks; fire next to smoke → gunpowder unlocks). Build a wood structure. Place gunpowder under it. Drop one fire cell. **The structure detonates** — wood goes flying, fire scatters in a circle, heat propagates outward, smoke billows. Now build a glass dome over a small chamber — light it up, watch the fire stay contained by transparent walls.
+
+> **The Wow Moment.** Build a long horizontal line of gunpowder cells, like a fuse. Place fire at one end. **Watch the chain detonation race down the line at one cell per frame, leaving a crater behind it.** That's gunpowder being lit by gunpowder being lit by gunpowder — a self-perpetuating reaction. **Your physics simulator just learned about chain reactions in the gameplay sense, not just the chemistry sense.** Save the clip; it's the best demo gif you'll ever produce.
+
+---
+
+## Linux (Ubuntu) note
+
+The explosion involves a burst of audio (the `boom.wav` from Session 16). On Ubuntu specifically:
+
+- **Audio latency.** PipeWire's default buffer can be 30-60ms. A chain-detonation fuse may play `boom` ten times in 200ms — close to the buffer length. Some triggers will be dropped (mixer can't keep up). Cosmetic. To tighten:
+
+  ```bash
+  export PIPEWIRE_LATENCY=128/48000
+  cargo run --release
+  ```
+
+  Halves the latency at the cost of higher CPU. If you're running an Ubuntu laptop on battery, the higher CPU may matter.
+
+- **`fastrand::f32` thread safety.** `fastrand` uses a thread-local RNG by default, which is the right thing for a single-threaded sim. If you ever rayon-parallelise the detonation pass, each rayon thread gets its own RNG automatically. No code change needed.
+
+- **Performance.** The `(-radius..=radius).flat_map(...).filter(...).collect()` pattern allocates a Vec per detonation. With `GUNPOWDER_RADIUS = 6`, that's ~113 cells per allocation. A long fuse with 50 detonations per second is ~6,000 cell positions allocated and freed per second. Negligible. If you ever scale up, reuse a single `Vec` (clear it each detonation).
+
+---
+
+## Common mistakes
+
+### `error: closure may outlive borrowed value`
+
+The classic. You have a closure that captures `dr` by reference, but `dr` is local to the outer closure. Add `move` to the outer closure. If that doesn't fix it, also add `move` to the inner. The borrow checker is telling you: "the inner closure needs to own its captures because it lives longer than the outer scope."
+
+### Detonation leaves a square crater, not a circle
+
+You forgot the `.filter(|(dr, dc)| dr*dr + dc*dc <= radius*radius)`. Without it, the iterator yields a square grid of offsets. Add the filter back.
+
+### Chain detonation skips cells
+
+You're iterating `for r in 0..ROWS` and *mutating* the grid mid-iteration. The list of cells to detonate is built first (`to_detonate`), and *then* applied. If you collapsed the two phases into one, gunpowder cells get cleared before being seen. Always two-phase: collect targets, then apply effects.
+
+### `error[E0507]: cannot move out of grid`
+
+Inside the iterator chain you tried to take ownership of a grid cell. Iterators over `&Vec` yield `&T`. Use `.copied()` (when T: Copy) or `.cloned()` (when T: Clone) to materialise a value, or pattern-match by reference: `|(dr, dc)| dr*dr + dc*dc <= ...`.
+
+### Glass doesn't form
+
+The reaction is in the table, but the recipe pass hasn't unlocked it — so you can't *place* sand. Wait. To test: temporarily unlock everything by hand. `discoveries.unlocked = catalogue().into_iter().map(|e| e.cell_type).collect();`.
+
+### Gunpowder detonates from any heat
+
+`temperature > 250.0` is the threshold. If your heatmap shows lava sitting at 1200°, then any adjacent gunpowder ignites correctly. If wood ignition heat radiates above 250°, gunpowder placed near burning wood will also detonate — intentional or not? Tune the threshold.
+
+---
+
+## Session challenge
+
+Pick one — no solution provided.
+
+1. **Variable-radius detonations.** Gunpowder cells store a `power: u8` field. Larger power → larger radius. Build a "demolition" workflow where you stack powders for compound effect.
+2. **Glass with thickness.** Glass that's been hit by heat above 1000°C cracks (visual: render with a darker outline) and breaks (becomes sand) on next contact with a non-glass cell.
+3. **Shrapnel.** When gunpowder detonates, scatter "shrapnel" — a few new cells of the previously-occupying type, hurled outward into nearby empty space. (Very satisfying; non-trivial.)
+4. **The fuse pattern as a function.** Generalise the chain-detonation into `fn chain_react(grid: &mut, start: (usize, usize), trigger: impl Fn(Cell)->bool, effect: impl FnMut(usize, usize))`. Use it for future cascading effects.
+
+---
+
+## Quick reference
+
+| What | Code |
+|---|---|
+| Inclusive range | `0..=10` (includes 10) |
+| Half-open range | `0..10` (excludes 10) |
+| `flat_map` | `iter.flat_map(\|x\| inner_iter(x))` |
+| `chain` | `iter1.chain(iter2)` |
+| Move closure | `move \|x\| x + captured` |
+| Collect to Vec | `.collect::<Vec<_>>()` |
+| Tuple destructure | `\|(a, b)\| ...` |
+| Squared distance | `dr*dr + dc*dc` (avoid sqrt) |
+| `&Vec<T>` iter | `v.iter()` yields `&T` |
+| `&mut Vec<T>` iter | `v.iter_mut()` yields `&mut T` |
+
+---
+
+## DofE log reminder
+
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 21**. Worth recording:
+
+- Your chain-detonation fuse clip
+- Your sentence on `move`: "what does adding `move` to a closure actually change?" — this is interview question candy

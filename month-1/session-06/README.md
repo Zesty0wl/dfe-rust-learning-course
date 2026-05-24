@@ -1,302 +1,250 @@
-# Session 6: Enums and Strings
+# Session 6 — Enums: Giving Elements Proper Names
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-## What You'll Learn
-
-How to define your own types with `enum`, the difference between `String` and `&str` (and why Rust has both), and a quick preview of `Vec<T>` so you can return a list of notes.
-
-## The Big Idea
-
-Enums in Rust are far more powerful than enums in Java or C — they're the same idea you'd find in Haskell or OCaml. Each variant can carry its own data, and `match` works on them beautifully. Today we'll only use the simple "C-like" enums; in Session 10 we'll see enums that carry data per variant. Together with `match`, enums are the foundation of how Rust models a domain.
-
-## Concepts Covered
-
-- Defining an `enum` with named variants
-- Using enums in `match`
-- `String` (owned, growable) vs `&str` (borrowed, fixed)
-- Common string methods: `.to_uppercase()`, `.contains()`, `.split()`, `.trim()`
-- `format!` for building strings
-- `Vec<T>` — quick preview as a return type
-
-## Building Towards `music-theory-cli`
-
-Today we lay every brick we still need for the Session 7/8 project:
-
-- A `NoteName` enum for the 12 chromatic notes
-- A `ScaleType` enum for major / minor / pentatonic
-- A `scale_notes` function that takes a root and a scale type and returns a `Vec<NoteName>`
-
-After this session, the rest of the mini-project is just gluing these together with input parsing and output formatting.
+> **Stuck on a word?** Things like *enum*, *variant*, *derive*, *trait* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-1/session-06/examples/`. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-1/session-06/examples/<example-folder>
-> cargo run
-> ```
->
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session your grid stores **a proper `enum CellType`** instead of raw `u8`s. The compiler will refuse to let you mistype an element, refuse to let you forget to handle a case, and refuse to let `SAND + 1` mean anything.
 
-### 1. Defining a simple enum
+---
+
+## What you'll learn
+
+- `enum` declarations and *variants*
+- The most-used derives: `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`, `Hash`
+- Why "make invalid states unrepresentable" is the headline Rust slogan
+- How exhaustive `match` becomes life-changingly useful once you're matching on an enum
+- A tiny preview of Month 2: `enum` *variants with data*
+
+---
+
+## The big idea
+
+A `u8` can hold values 0–255. Your simulation uses four: `EMPTY = 0`, `SAND = 1`, `WATER = 2`, `STONE = 3`. The other 252 values are nonsense for your program. If you write `grid[row][col] = 17;` by accident, nothing complains — `cell_colour` returns BLACK, `update_cell`'s wildcard arm does nothing, and the cell just *quietly behaves wrong*.
+
+An `enum` is Rust saying: *give me the exact list of legal values, and I'll guarantee no others can sneak in*. `grid[row][col] = 17;` won't even compile. Forgetting a case in a `match` won't compile. Comparing `CellType::Sand` to `CellType::Water` does the right thing without you having to remember that `1 != 2`.
+
+This is **"make invalid states unrepresentable."** It's the single most repeated piece of advice in Rust circles, and it's what makes Rust programs feel like they refuse to break.
+
+---
+
+## Concepts covered
+
+- `enum` definitions
+- `#[derive(...)]` attributes
+- Why `Copy` matters for small types and what changes if you don't have it
+- `PartialEq` and `Eq` for `==` comparisons
+- `Hash` for HashMap keys (preview of Session 14)
+- Replacing `u8` constants throughout the codebase with a single mass-rename
+
+---
+
+## Building towards `sand-sim`
+
+Today is the **last "type-system" upgrade** you do in Month 1. Once `CellType` is in place, every later element addition (water-already-done, fire, oil, lava, acid, glass, …) is a *one-line addition to the enum* — and the compiler then walks you through every `match` that needs a new arm. This is the closest Rust gets to magic.
+
+Session 14's `HashMap<(CellType, CellType), ReactionOutcome>` *requires* `Hash` and `Eq` on the key — those derives go on today.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 5 ended with three elements working (sand, water, stone) and `update_cell` dispatching via `match` on the `u8`. If anything is wobbly, run `cargo run` first and confirm pour-pile-flow still works before you touch the type system.
+
+### 1. Declare the enum — 2 minutes
+
+At the top of `src/main.rs`, just below `use macroquad::prelude::*;`, replace your `const EMPTY: u8 = 0;` block with:
 
 ```rust
-enum ScaleType {
-    Major,
-    NaturalMinor,
-    PentatonicMajor,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum CellType {
+    Empty,
+    Sand,
+    Water,
+    Stone,
 }
 ```
 
-Three variants, no data. Just like a Java enum or C's `enum`.
+**What just happened.** `enum CellType { ... }` declares a new type. Its only legal values are the four listed. Each value is called a **variant**.
 
-You construct values with `ScaleType::Major`. The double-colon `::` is the path separator — it says "the `Major` that lives inside `ScaleType`".
+The `#[derive(...)]` line tells the compiler to auto-generate a few standard implementations:
 
-### 2. Matching on an enum
+- **`Debug`** — lets you print the value with `{:?}`: `println!("{:?}", CellType::Sand)` outputs `Sand`. Essential for debugging.
+- **`Clone`** — lets you make a copy explicitly with `.clone()`.
+- **`Copy`** — lets the variable be copied *implicitly* on assignment (like an integer). Without `Copy`, `let a = thing; let b = thing;` would *move* `thing` into `a` and `b` would be a compile error. Small "value-like" types should be `Copy`. Big collections shouldn't.
+- **`PartialEq`** and **`Eq`** — let you use `==` and `!=`. `PartialEq` is the basic one; `Eq` is a "marker" trait that promises the equality is total (no `NaN`-style weirdness). Both are needed for HashMap keys.
+- **`Hash`** — needed for HashMap keys. We don't use it today; we add it now so Session 14 doesn't need a refactor.
+
+### 2. Update the grid's element type — 1 minute
+
+Change the `grid` initialisation in `main`:
 
 ```rust
-fn semitone_pattern(scale: &ScaleType) -> &'static [u8] {
-    match scale {
-        ScaleType::Major           => &[2, 2, 1, 2, 2, 2, 1],
-        ScaleType::NaturalMinor    => &[2, 1, 2, 2, 1, 2, 2],
-        ScaleType::PentatonicMajor => &[2, 2, 3, 2, 3],
-    }
+    let mut grid: Vec<Vec<CellType>> = vec![vec![CellType::Empty; COLS]; ROWS];
+```
+
+(Was `vec![vec![0u8; COLS]; ROWS]`.) Save. **Don't run yet** — there will be a cascade of errors. That's the point of this exercise.
+
+### 3. Let the compiler walk you through every breakage — 8 minutes
+
+Run `cargo check` (faster than `cargo run` because it skips codegen).
+
+You'll get a wall of errors like:
+
+```text
+error[E0308]: mismatched types
+  --> src/main.rs:42:39
+   |
+42 |             draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, cell_colour(cell));
+   |                                                        ----------- ^^^^ expected `u8`, found `CellType`
+```
+
+This is what people mean when they say "the compiler is your friend." Each error points at exactly one place that assumed `u8` and now sees `CellType`. **Fix them one at a time.**
+
+The fixes are mechanical:
+
+- Anywhere it says `if cell == SAND`, replace with `if cell == CellType::Sand`.
+- Anywhere it says `grid[row][col] = SAND;`, replace with `grid[row][col] = CellType::Sand;`.
+- `cell_colour(cell: u8)` becomes `cell_colour(cell: CellType)`.
+- The `match cell { SAND => ..., _ => {} }` inside `cell_colour` and `update_cell` becomes `match cell { CellType::Sand => ..., _ => {} }`.
+- `selected: u8` becomes `selected: CellType`, initialised as `let mut selected = CellType::Sand;`.
+
+**As you fix each, `cargo check` again.** The error count shrinks. By the time it hits zero, everything compiles and behaves identically to Session 5 — but now the type system is guarding the gate.
+
+**First runnable checkpoint.** `cargo run`. Pour sand, pour water, place stone. **Visually identical to Session 5.** The win isn't visible — it's structural.
+
+### 4. Delete the old `const`s — 1 minute
+
+Once `cargo check` is clean, search for `const EMPTY`, `const SAND`, `const WATER`, `const STONE` and delete them. They're dead. (If anything still references them, you missed a spot — the compiler will scream again, which is good.)
+
+### 5. Exhaustive matching, the payoff — 4 minutes
+
+Now, the magic moment. Add a fifth variant — don't worry about implementing it yet:
+
+```rust
+enum CellType {
+    Empty,
+    Sand,
+    Water,
+    Stone,
+    Wood,   // new
 }
 ```
 
-A few new things:
+Run `cargo check`. The compiler now lists *every match in the program that doesn't handle `Wood`*:
 
-- We take `scale` by reference (`&ScaleType`) rather than by value. `ScaleType` doesn't derive `Copy`, so passing it by value would *move* it into the function and the caller couldn't use it again. Borrowing is cheap and lets the caller keep ownership.
-- The return type `&'static [u8]` is a borrowed slice of bytes that lives for the entire program (the `'static` lifetime). For a hardcoded literal like `&[2, 2, 1, 2, 2, 2, 1]`, this is exactly right.
-- The `match` is exhaustive over the three variants — try removing one and see what the compiler says.
-
-> Note these are **musical interval patterns**: the number of semitones between consecutive notes of the scale. `2,2,1,2,2,2,1` is the major scale (whole-whole-half-whole-whole-whole-half).
-
-### 3. The `NoteName` enum
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum NoteName {
-    C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, B,
-}
+```text
+error[E0004]: non-exhaustive patterns: `Wood` not covered
+  --> src/main.rs:55:11
 ```
 
-The `#[derive(...)]` line asks the compiler to write some boilerplate impls for us:
+It points at `cell_colour`, at `update_cell`, at `element_name` — every match expression that uses `_ =>` is still fine, but if you removed your wildcard arms (which you can, now that the enum is closed), the compiler **listed every place a Wood-shaped hole exists**. This is what's meant by "the compiler refactors with you."
 
-- `Debug` — lets us print with `{:?}`
-- `Clone` — lets us call `.clone()`
-- `Copy` — makes the type behave like an `i32` (cheap to copy by value)
-- `PartialEq` — lets us compare with `==`
+For now, delete the `Wood` variant again — we'll add it for real in Session 11.
 
-Twelve variants, one per chromatic note. Note we use `CSharp` rather than `C#` because `#` isn't allowed in Rust identifiers.
+> **The Wow Moment.** Add the `Wood` variant back temporarily. Run `cargo run` with a deliberately incomplete `match` (no `_` arm). The compiler refuses to even build — it knows you forgot to handle wood. **Most languages let this kind of bug ship to production. Rust catches it before the file is saved.** That's the safety story in one error message.
 
-### 4. Going from `NoteName` to a string
+### 6. (Optional) `impl CellType` for tidy code — 4 minutes
+
+Move `cell_colour` and `element_name` onto the enum as methods:
 
 ```rust
-impl NoteName {
-    fn as_str(self) -> &'static str {
+impl CellType {
+    fn colour(self) -> Color {
         match self {
-            NoteName::C       => "C",
-            NoteName::CSharp  => "C#",
-            NoteName::D       => "D",
-            NoteName::DSharp  => "D#",
-            NoteName::E       => "E",
-            NoteName::F       => "F",
-            NoteName::FSharp  => "F#",
-            NoteName::G       => "G",
-            NoteName::GSharp  => "G#",
-            NoteName::A       => "A",
-            NoteName::ASharp  => "A#",
-            NoteName::B       => "B",
+            CellType::Sand  => Color::new(0.95, 0.78, 0.40, 1.0),
+            CellType::Water => Color::new(0.20, 0.55, 0.95, 1.0),
+            CellType::Stone => Color::new(0.55, 0.55, 0.60, 1.0),
+            CellType::Empty => BLACK,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            CellType::Sand  => "sand",
+            CellType::Water => "water",
+            CellType::Stone => "stone",
+            CellType::Empty => "empty",
         }
     }
 }
 ```
 
-You'll meet `impl` properly in Session 9. For now: it's how you attach methods to a type.
+Then call sites become `cell.colour()` and `cell.name()`. Both `match`es are now **exhaustive without a wildcard** — and if you add `Wood` next session, the compiler will list both methods as "non-exhaustive" with a one-line tweak each.
 
-### 5. `String` vs `&str`
-
-This is the topic that confuses every Rust beginner. The two things to know:
-
-- **`&str`** is a *borrowed* view into a string that lives somewhere else. String literals in Rust source code (`"hello"`) have type `&'static str`. Functions usually take `&str` as a parameter — it's flexible (it accepts both literal strings and slices of `String`s).
-- **`String`** is an *owned*, *growable* heap-allocated string. You build one when you need to construct a string at runtime.
-
-```rust
-fn greet(name: &str) {
-    println!("Hello, {}!", name);
-}
-
-fn main() {
-    greet("Alex");                      // ✅ &'static str
-
-    let owned: String = String::from("Alex");
-    greet(&owned);                      // ✅ &String coerces to &str
-
-    let upper = owned.to_uppercase();   // returns a new String
-    greet(&upper);
-}
-```
-
-**Rule of thumb:** parameters take `&str`, return values that you build at runtime are `String`.
-
-### 6. The `format!` macro
-
-```rust
-let name = "Alex";
-let n = 5;
-let msg = format!("{} has done {} sessions", name, n);
-println!("{}", msg);
-```
-
-`format!` works like `println!` but returns a `String` instead of printing.
-
-### 7. Quick `Vec<T>` preview
-
-```rust
-let mut notes: Vec<NoteName> = Vec::new();
-notes.push(NoteName::C);
-notes.push(NoteName::E);
-notes.push(NoteName::G);
-
-for n in &notes {
-    print!("{} ", n.as_str());
-}
-println!();
-```
-
-`Vec<T>` is a growable list. We'll cover it properly in Session 11. Today we just need it as a return type.
-
-### 8. Putting it together: `scale_notes`
-
-```rust
-fn scale_notes(root: NoteName, scale: &ScaleType) -> Vec<NoteName> {
-    let pattern = semitone_pattern(scale);
-    let chromatic = [
-        NoteName::C, NoteName::CSharp, NoteName::D, NoteName::DSharp,
-        NoteName::E, NoteName::F, NoteName::FSharp, NoteName::G,
-        NoteName::GSharp, NoteName::A, NoteName::ASharp, NoteName::B,
-    ];
-
-    let mut index = chromatic.iter().position(|&n| n == root).unwrap();
-    let mut result = vec![root];
-    for &step in pattern {
-        index = (index + step as usize) % 12;
-        result.push(chromatic[index]);
-    }
-    result
-}
-```
-
-`root` is `NoteName` by value (cheap — it's `Copy`), but `scale` is `&ScaleType` for the same reason as before.
-
-Don't worry about every line yet (`.position()` and `|&n| n == root` are iterator methods we'll cover later). The shape of it is the important bit:
-
-1. Find the index of the root note in the chromatic scale.
-2. Walk the interval pattern, each step jumping `step` semitones.
-3. Collect the notes into a `Vec` and return it.
-
-Run the example (`examples/scales_intro/`) to see it in action:
-
-```text
-C Major: C D E F G A B C
-A Natural Minor: A B C D E F G A
-G Pentatonic Major: G A B D E G
-```
+Notice the parameter is `self` (not `&self`) — `CellType` is `Copy`, so passing-by-value costs nothing and lets you call `.colour()` repeatedly without ownership games.
 
 ---
 
-## Common Mistakes
+## Common mistakes
 
-### ❌ Trying to use `==` without `PartialEq`
+### `error[E0599]: no method named 'colour' found for type 'CellType'`
 
-```rust
-enum Foo { A, B }
-let x = Foo::A;
-if x == Foo::A {}      // 💥 unless you derive PartialEq
-```
+You wrote `cell.colour()` but never opened an `impl CellType { ... }` block, or you put `fn colour` outside the `impl` block. Methods only exist inside `impl`.
 
-**Fix:** add `#[derive(PartialEq)]` above the enum.
+### `error: cannot find type 'CellType' in this scope`
 
-### ❌ Forgetting that `String` and `&str` are different types
+You used `CellType` inside a function that's in a different file or module without `use crate::CellType;`. We don't have multi-file modules until Session 17, so this only bites if you anticipated and split files early.
 
-```rust
-let s: String = "hi".to_string();
-greet(s);              // 💥 if greet takes &str
-```
+### `error[E0277]: the trait bound 'CellType: Copy' is not satisfied`
 
-**Fix:** `greet(&s);`. The `&` borrows the `String` as a `&str`.
+You assigned a `CellType` to two variables, but forgot `Copy` in the derive. Add `Copy` to the `#[derive(...)]` list. (You need `Clone` for `Copy` to work — derive both.)
 
-### ❌ Building strings with `+` in a loop
+### `match` complains "non-exhaustive patterns" after you removed the wildcard
 
-```rust
-let mut s = String::new();
-for word in words {
-    s = s + word + " ";    // works but inefficient — copies repeatedly
-}
-```
+That's a feature, not a bug. The compiler is showing you exactly where to add the new variant. Add the missing arm.
 
-**Fix:** use `s.push_str(word); s.push(' ');` — or build via `.collect::<String>()` later.
+### Grid renders nothing after the refactor
 
-### ❌ Using `unwrap()` on something that might be `None`
+You probably forgot to change the `vec![vec![0u8; COLS]; ROWS]` initialiser to `vec![vec![CellType::Empty; COLS]; ROWS]`. Without it, the `vec!` macro defaults to `0_u8`-typed inner vecs (depending on inference), and then you get a different cascade of errors. Use `cargo check`, follow the trail.
 
-We'll cover this in Session 10. For now, just be aware that `.unwrap()` will crash if there's nothing to unwrap.
+### `cargo run` still works but a key behaviour changed
+
+Most likely cause: somewhere you wrote `CellType::Sand` instead of `CellType::Water` (or vice versa) during the mass rename. **Read every changed line.** `git diff` is your friend.
 
 ---
 
-## Session Challenge
+## Linux (Ubuntu) note
 
-Add a third scale type to `scale_notes`: `Blues` (semitone pattern `3, 2, 1, 1, 3, 2`). Test it with `A` as the root — you should get `A C D D# E G A`. Then think about: what other scale types might be fun? **Lydian**? **Phrygian dominant**? Add one of your own choosing.
+Nothing OS-specific in this session. Identical commands on Ubuntu.
+
+`cargo check` (which you'll lean on heavily today) is genuinely fast on Linux thanks to fast filesystem syscalls and a quick linker. Run it after every two-or-three line change to catch type-system mistakes early — the inner loop on Ubuntu is typically sub-second.
+
+If rust-analyzer in VS Code under-highlights or misses errors during the refactor, hit `Ctrl+Shift+P` → *"Rust Analyzer: Restart Server"*. It re-runs the type-check from scratch and usually clears phantom errors caused by half-saved files.
 
 ---
 
-## Quick Reference
+## Session challenge
 
-| Concept | Syntax |
+Pick one, no solution provided.
+
+1. **Move `update_sand` and `update_water` onto `CellType`.** Make them methods (`fn update(self, grid: &mut Vec<Vec<CellType>>, row: usize, col: usize)`). Dispatch becomes `cell.update(grid, row, col)`. Notice the natural shape.
+2. **`Display` instead of `Debug`.** Manually `impl std::fmt::Display for CellType` and pretty-print as `"💧 water"`-style strings. (No derive available — `Display` is intentionally not derivable, because human-readable output is a *design* choice.)
+3. **Toggle key for "godmode brush".** Press `G` to set the next click to fill an entire connected region of the same `CellType` (a flood fill). Hint: `Vec<(usize, usize)>` as a stack, `match` on `CellType` to decide whether to recurse.
+4. **A reverse lookup** — given a key `1`/`2`/`3`/`4`, return the `CellType`. Write it as a function `CellType::from_key(KeyCode) -> Option<CellType>`. This is the shape you'll use in Session 7 for the element selector. (`Option` arrives next month for real.)
+
+---
+
+## Quick reference
+
+| What | Code |
 |---|---|
-| Define enum | `enum E { A, B, C }` |
-| Use variant | `E::A` |
-| Derive | `#[derive(Debug, Clone, Copy, PartialEq)]` |
-| Method block | `impl E { fn foo(self) -> ... { ... } }` |
-| Owned string | `String::from("...")` or `"...".to_string()` |
-| Borrow as `&str` | `&owned_string` |
-| Build string | `format!("{}-{}", a, b)` |
-| Make a `Vec` | `vec![1, 2, 3]` |
-| Empty `Vec` | `Vec::new()` |
-| Push | `v.push(x);` |
+| Declare enum | `enum CellType { Empty, Sand, Water, Stone }` |
+| Use a variant | `let c = CellType::Sand;` |
+| Common derives | `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]` |
+| Match exhaustively | `match c { CellType::Sand => ..., CellType::Water => ..., ... }` |
+| Method on enum | `impl CellType { fn name(self) -> &'static str { ... } }` |
+| Print with Debug | `println!("{:?}", c)` |
+| Compare | `if c == CellType::Sand { ... }` |
+| Empty grid | `vec![vec![CellType::Empty; COLS]; ROWS]` |
 
 ---
 
-## Further Reading
+## DofE log reminder
 
-Curated extra material on the topics covered in this session (Enums and Strings). All free; all current as of writing.
+Open [`dfe/session-log.md`](../../dfe/session-log.md) and fill in **Session 6**. Highest-signal things to record:
 
-- [**The Rust Book** — *Defining an Enum* (6.1)](https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html) — Why enums in Rust are far more powerful than in most languages.
-- [**The Rust Book** — *Storing UTF-8 Encoded Text with Strings* (8.2)](https://doc.rust-lang.org/book/ch08-02-strings.html) — Why `String` and `&str` exist as separate types and when to use each.
-- [**It's Not Wrong That `"🤦🏼‍♂️".length == 7`** — Henri Sivonen](https://hsivonen.fi/string-length/) — Why string length is a complicated question, and how Rust's choice differs from JavaScript and Python.
-- [**`std::string` and `std::str` API docs**](https://doc.rust-lang.org/std/string/struct.String.html) — The full API for `String`. Most of the methods you'll ever want are listed at the top.
-
----
-
-## Stuck?
-
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
-
----
-## DofE Log Reminder
-
-> 📝 Session 6 done. The next two sessions are project work — no new concepts. Capture this one in [`dfe/session-log.md`](../../dfe/session-log.md). What was the most surprising thing about `String` vs `&str`?
+- Your own definition of "make invalid states unrepresentable" — say it back in plain English
+- The first compile error the type swap surfaced that you thought was annoying *until* you realised it had caught a real bug (or would have caught one in a bigger codebase)

@@ -1,199 +1,378 @@
-# Session 24 — Polyphony, `--chord` Mode, and a Retrospective
+# Session 24 — Showcase and Retrospective (v1.0 ships)
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
+> **Stuck on a word?** Things like *retrospective*, *changelog*, *MVP*, *post-mortem* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
+---
 
-> *"Final session. Today we polish the CLI, add chord mode, make sure polyphony works properly, and reflect on the road from `Hello, world!` to a working synthesiser."*
+## The Goal
 
-> ### 🅰️🅱️ Tracks converge here
->
-> If you took **Track A** in sessions 22 and 23 (parsed `.mid` files, built live MIDI), `--chord` mode is the natural finishing touch — a fourth, simpler mode that completes the CLI.
->
-> If you took **Track B** (typed melodies and chord progressions to WAV), today's `--chord` mode is the natural extension of yesterday's `--progression` example — same `chord_intervals`, same additive mixing, just one chord instead of many. You can either work in the project's `starter/` or extend yesterday's `track_b_progression` example. Both count.
->
-> The **What You've Built** retrospective at the end is written for both tracks.
+By the end of this session **`sand-sim` v1.0 ships**. It has a polished README, a project-root README updated to point at the v1.0 directory, a `cargo clippy` pass with no warnings, a tagged release on your fork, and the milestone-3 reflection complete. **You can hand the binary to a friend, send the GitHub link to a recruiter, and proudly screenshot the codex for your DofE folder.**
 
-## What You'll Learn
+You also do something specific to this session: **the retrospective.** What you built, what you learned, what's next.
 
-- Designing a clean CLI with `clap`'s `#[derive(Parser)]`.
-- Polyphony: playing multiple notes truly simultaneously.
-- A `--chord ROOT --chord-quality maj|min|...` mode.
-- Code review: looking at code you wrote 12 weeks ago and improving it.
+---
 
-## The Big Idea
+## What you'll learn
 
-You already have polyphony in two places:
-- `midi_file.rs` mixes overlapping notes from a `.mid`.
-- `live.rs` mixes voices from a live keyboard.
+- The ship discipline — polishing the last 10% takes the same time as the previous 50%
+- `cargo clippy` — the Rust linter
+- `cargo fmt` — automatic formatting
+- The retrospective form — "what worked, what surprised, what next"
+- Pointers to the major next-step crates and topics (rayon, wasm32, Bevy, embedded)
 
-This session lifts that capability into the offline CLI as **chord mode**. A chord is just N notes started at the same time:
+---
 
-```
-C major = root + major-3rd + perfect-5th = MIDI [60, 64, 67]
-```
+## The big idea
 
-Loop through them, render each, sum into one buffer, normalise, write WAV. That's it.
+A project isn't done when the last feature works. It's done when **someone else can pick it up, understand it, and do something with it.** That's the polish work — README, tests, formatting, commit hygiene, a sensible release note.
 
-## Concepts Covered
+The retrospective is the second half. You spent three months on `sand-sim`. **What did you actually learn?** Not "I learned Rust" — be specific. *"I learned that table-driven code reads better than branchy code, and the moment to refactor is when you have more than four cases."* That kind of sentence is worth thirty interview questions answered.
 
-- `clap`'s `#[command(...)]` and `#[arg(...)]` attributes.
-- Chord intervals (a tiny revisit of `music-theory-cli` from Month 1).
-- `clamp` + `normalise` for clean audio at any voice count.
-- Reading old code with fresh eyes.
+---
 
-## Building Towards `midi-synth` (final)
+## Concepts covered
 
-After today the CLI supports four mutually exclusive modes:
+- `cargo clippy --all-targets -- -D warnings`
+- `cargo fmt --check`
+- README structure for a portfolio project
+- Git tagging conventions (`v1.0.0`)
+- The retrospective: three questions, honest answers
+- Future-direction pointers: **rayon**, **wasm32**, **Bevy**, **embedded Rust**, fluid-dynamics
+
+---
+
+## Building towards `sand-sim`
+
+This is the milestone. **You ship.** Then you move on.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 23 finished. Title screen, state machine, hidden recipes, easter egg all work. Codex is gorgeous. The sim has 15+ elements, table-driven chemistry, multi-second timed reactions, persistent saves.
+
+### 1. `cargo clippy` and `cargo fmt` — 8 minutes
+
+From `month-3/milestone/sand-sim-v1.0/`:
 
 ```bash
-midi-synth --note 69                              # single note
-midi-synth --chord C --chord-quality minor        # chord
-midi-synth --midi-file song.mid                   # whole song
-midi-synth --live                                 # live keyboard
+cargo clippy --all-targets -- -D warnings
 ```
 
-…all sharing the same engine, ADSR, and WAV writer. That's the project complete.
+`-D warnings` turns every clippy warning into an error. You'll get a list. Common ones:
 
-> 💡 **Where to work today.** This is a project session, so you'll be inside the project folder, not the session folder. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-3/project/midi-synth/starter        # your work-in-progress
-> cargo run -- <args>
-> ```
->
-> The reference implementation lives in `month-3/project/midi-synth/solution/` — peek only when you're properly stuck. All `cargo run` commands shown below assume you're inside `month-3/project/midi-synth/starter/`.
+- `redundant_field_names` — `Cell { cell_type: cell_type }` should be `Cell { cell_type }`.
+- `needless_return` — drop the final `return`.
+- `useless_vec` — `vec![1, 2, 3].iter()` → `[1, 2, 3].iter()`.
+- `single_match` — single-arm `match` should be `if let`.
 
-## Step-by-Step Walkthrough
+Fix each. They're not strict requirements but they're a respected convention. Code that passes `clippy -D warnings` reads as "this person knows the language."
 
-### 1. Add chord-related CLI flags
-
-```rust
-#[arg(long)] chord: Option<String>,                       // root note name
-#[arg(long, default_value = "major")] chord_quality: String,
-```
-
-### 2. Note-name → MIDI
-
-```rust
-fn note_name_to_midi(name: &str) -> Option<u8> {
-    let (letter, accidental) = /* C, C#, Bb, ... */;
-    let base = match letter { 'C'=>0, 'D'=>2, 'E'=>4, 'F'=>5, 'G'=>7, 'A'=>9, 'B'=>11, _=>return None };
-    Some((60 + base + semis) as u8)
-}
-```
-
-You wrote almost this exact function in session 4 of `music-theory-cli`. Lift and adapt.
-
-### 3. Chord intervals
-
-```rust
-fn chord_intervals(quality: &str) -> Option<&'static [i32]> {
-    Some(match quality.to_lowercase().as_str() {
-        "major" => &[0, 4, 7],
-        "minor" => &[0, 3, 7],
-        "dim"   => &[0, 3, 6],
-        "maj7"  => &[0, 4, 7, 11],
-        "min7"  => &[0, 3, 7, 10],
-        "dom7" | "7" => &[0, 4, 7, 10],
-        _ => return None,
-    })
-}
-```
-
-### 4. Render the chord
-
-```rust
-let mut buffer: Vec<f32> = Vec::new();
-let voices: Vec<u8> = intervals.iter().map(|i| (root as i32 + i) as u8).collect();
-for n in &voices {
-    let buf = render_note(waveform, *n, duration, sample_rate, 0.7, Adsr::default());
-    mix_into(&mut buffer, &buf, 0);
-}
-normalise(&mut buffer);
-wav::write_wav(&out, &buffer, sample_rate)?;
-```
-
-### 5. Try it
+Then:
 
 ```bash
-cargo run -- --chord C --chord-quality minor --duration 2 --waveform triangle --out c-min.wav
-cargo run -- --chord G --chord-quality dom7  --duration 3 --waveform saw      --out g7.wav
+cargo fmt
 ```
 
-A `dom7` chord wants to resolve down a fifth — try playing G7 then C major back-to-back.
+Auto-formats everything. Commit the result as a separate "cargo fmt pass" commit so the diff is small.
 
-## Common Mistakes
+Then verify:
 
-- **Chord too quiet** after normalisation: that's correct! Four voices summed and then scaled to peak ≈ 1.0 puts each individual voice at ~0.25. To compensate, raise per-voice velocity to ~0.85.
-- **Modes silently overlap**: order your `if let Some(...) = ...` branches sensibly and `return Ok(())` from each.
+```bash
+cargo clippy --all-targets -- -D warnings && cargo fmt --check && cargo build --release && cargo run --release --example smoke_test
+```
 
-## Session Challenge — capstone
+(If you don't have a `smoke_test` example, skip it. The chain just confirms the project is in clean shape.)
 
-1. **Add `--arpeggio`** that, instead of mixing chord notes simultaneously, plays them in sequence with a configurable note length.
-2. **Read a chord progression** from a text file (`Cmaj | Am | F | G7 |`) and render the whole thing.
-3. **Write a 30-second backing track**: a simple chord progression + a single melody line over the top, all from one Rust command.
+### 2. Project-root README — 5 minutes
+
+Edit `/README.md` (the top-level repo README) to point at v1.0:
+
+```markdown
+# Rust Learning Course — sand-sim project
+
+A three-month Rust course delivered through the Duke of Edinburgh Award scheme. Build a falling-sand physics simulator over 24 sessions, shipping three releases.
+
+## Releases
+
+- **v0.1** — `month-1/milestone/sand-sim-v0.1/` — sand, water, stone, brush, audio.
+- **v0.2** — `month-2/milestone/sand-sim-v0.2/` — fire chemistry, lava, ice, table-driven reactions.
+- **v1.0** — `month-3/milestone/sand-sim-v1.0/` — recipe discovery, codex UI, save/load, polish.
+
+## Quick run
+
+```bash
+cd month-3/milestone/sand-sim-v1.0
+cargo run --release
+```
+
+## Course materials
+
+- Month 1: Foundations (see `month-1/README.md`)
+- Month 2: Chemistry (see `month-2/README.md`)
+- Month 3: The Alchemy Game (see `month-3/README.md`)
+- Glossary at `GLOSSARY.md`
+- Cheat sheet at `resources/cheatsheet.md`
+
+## DofE evidence
+
+The `dfe/` folder holds the participant log, milestone reflections, and assessor briefing.
+```
+
+### 3. The v1.0 README — 8 minutes
+
+Edit `month-3/milestone/sand-sim-v1.0/README.md`:
+
+```markdown
+# sand-sim v1.0
+
+A real-time, table-driven physics-and-chemistry sandbox in Rust. 15+ elements, recipe-based discovery, save/load, codex UI, hidden secrets.
+
+(Drop a `screenshot.png` in `assets/` and reference it here with a standard markdown image tag.)
+
+## Run
+
+```bash
+cargo run --release
+```
+
+Recommended: 1080p+ display, audio enabled.
+
+## Controls
+
+| Key | Action |
+|---|---|
+| Enter | (title) Start new game |
+| L | (title) Load save |
+| 1-9 | (play) Select element |
+| L-click drag | Paint |
+| R-click drag | Erase |
+| Scroll | Brush size |
+| Space | Pause |
+| Tab | Open codex |
+| H | Heat-source brush |
+| T | Toggle heatmap |
+| S | Save |
+| L | (play) Load |
+| C | Clear world |
+| Esc | Back / quit overlay |
+
+## Elements
+
+Sand, water, stone, wood, fire, smoke, oil, oil-fire, steam, acid, lava, ice, gunpowder, glass, concrete, wet concrete, iron, rust — plus three secret elements. Discover them by experimenting.
+
+## Architecture
+
+- `Cell { cell_type, temperature, lifetime, set_at }` — per-cell unit.
+- `REACTIONS: HashMap<(CellType, CellType), ReactionOutcome>` — every pairwise interaction.
+- `Recipe { name, unlocks, predicate: Box<dyn Fn(&grid) -> bool> }` — gameplay discovery.
+- State machine: `GameState { Title, Playing, Codex, Paused }`.
+- Modules: elements, reactions, simulation, rendering, ui, audio, recipes, codex, persist.
+
+## Save format
+
+JSON, v1, human-readable. Edit by hand at your own risk.
+
+## Credits
+
+Audio: credits live alongside this README in `assets/CREDITS.md`.
+
+Course: see the repository root `README.md`.
+
+## License
+
+MIT.
+
+## What's next
+
+This was a course project. Real-world extensions:
+
+- **Performance**: parallelise the cell update with [rayon](https://crates.io/crates/rayon) — split the grid into chunks per CPU core. Likely 4-8× speedup on a modern Ubuntu laptop.
+- **Web**: target `wasm32-unknown-unknown` and ship a playable demo on a static page. macroquad supports this directly. ~3 lines of `Cargo.toml` change.
+- **Bigger engine**: port to [Bevy](https://bevyengine.org/) — the major Rust game engine. ECS, async asset loading, scene graph. Your sim becomes a *system* in Bevy's terms.
+- **Real fluid dynamics**: replace the cellular-automaton water with a true Navier-Stokes grid solver. Slower per frame but visually astonishing. Many tutorials exist.
+- **Embedded**: a smaller version with ~50×30 cells could run on a Raspberry Pi Pico in `no_std` Rust, painting cells to an OLED. The same `CellType` enum, the same reactions table, the same architecture.
+```
+
+### 4. Tag the release — 1 minute
+
+From the repo root:
+
+```bash
+git add -A
+git commit -m "Ship sand-sim v1.0 — recipes, codex, save/load, polish"
+git tag -a v1.0.0 -m "Month 3 milestone: 15+ elements, recipe discovery, codex UI, time-aware reactions, hidden secrets"
+git push origin main
+git push origin v1.0.0
+```
+
+### 5. The retrospective — 10 minutes
+
+Open [`dfe/milestone-3-reflection.md`](../../dfe/milestone-3-reflection.md). Three sections, three honest answers.
+
+**What you built.** Bullet form. The specifics. *"15 element types, table-driven chemistry, codex UI with generics, save/load with serde, frame-rate-independent state changes."* The hiring manager reading your CV in 6 months wants exact numbers, not "a Rust project."
+
+**What you learned that surprised you.** Specifics again. *"The `?` operator turned what would have been my biggest pain point (error handling) into one character per call site."* *"Closures behind `dyn Fn` are how you make table-driven gameplay work."* These are interview-day quotes.
+
+**What's next for you.** Be honest. Maybe it's "I want to learn embedded Rust." Maybe it's "I want to ship a real game on Steam." Maybe it's "I'm done with games; I want to learn Rust for backend services." All three are great answers. Pick the one that's true.
+
+### 6. The "What You've Built" mental check — 5 minutes
+
+Don't skip this. List, in your own words, the *concepts* you now genuinely understand:
+
+- Variables, types, constants
+- Functions, parameters, return types
+- Control flow: if/else, loops, match
+- Pattern matching with guards and ranges
+- Enums (plain and data-bearing) and `Option`/`Result`
+- Structs with methods, derives
+- Modules, visibility, project structure
+- HashMap, Vec, iterators, closures
+- Generics and trait objects
+- `serde` for JSON serialisation
+- `std::time` for wall-clock timing
+- `OnceLock` for static initialisation
+- Borrow checker, references, ownership
+- Cargo, dependencies, profiles, releases
+
+That's a senior-intern-grade Rust skillset. **You can apply for entry-level Rust roles with this list in your CV.** The course handed you the road map; you walked it.
+
+### 7. The send — 2 minutes
+
+Send the GitHub link to:
+
+- The course assessor (DofE).
+- One person who knows Rust (ask for honest feedback).
+- One person who doesn't know Rust at all (ask if they can run the binary).
+- Yourself in six months — schedule an email.
+
+> **The Wow Moment.** Cargo built. Clippy clean. README done. Tag pushed. Retrospective written. **Close your laptop.** Open it tomorrow. Read your own retrospective. **Realise the person who wrote that text wasn't the same person who started Session 1.**
+>
+> That distance is the entire point of the course. You proved to yourself, in writing, that you can land on an unfamiliar language and *ship*. Everything from here is a variation on that one capability.
 
 ---
 
-## What You've Built
+## Linux (Ubuntu) note
 
-Look back. In **session 1** your program said `Hello, world!`. In **session 24** you have a working software synthesiser that:
+The v1.0 release on Ubuntu is the one you'll actually demo. Last-mile polish:
 
-- Synthesises four waveforms from first principles.
-- Applies an ADSR envelope you understand inch-by-inch.
-- Writes valid WAV files.
-- Renders multi-note music to audio (a `.mid` file if you took Track A; a typed melody and chord progression if you took Track B).
-- Exposes everything through a tidy `clap` CLI.
+- **Binary distribution.** `target/release/sand-sim` is a dynamically-linked ELF. To check what it needs:
 
-If you took Track A in session 23, your synth *also* listens to a real MIDI keyboard and plays through real speakers — handling threading, audio callbacks, and OS APIs cleanly. That's a non-trivial systems-programming win.
+  ```bash
+  ldd target/release/sand-sim
+  ```
 
-You also built two earlier projects (`music-theory-cli`, `world-generator`), so you have **three** real Rust programs on your laptop. None of those are toys. People sell software like this.
+  Expect: libc, libpthread, libGL, libX11, libasound. Most modern Ubuntu installs have all of these. If you want a "drop the file and it just runs" binary, look at the `cargo-deb` crate to wrap it as a `.deb`:
 
-## What's Next
+  ```bash
+  cargo install cargo-deb
+  cargo deb
+  ```
 
-You've outgrown the beginner phase of Rust. Pick whatever sounds fun:
+  Produces `target/debian/sand-sim_1.0.0_amd64.deb`. Install with `sudo dpkg -i ...`. Removes with `sudo apt remove sand-sim`. Production-grade.
 
-- **Web / APIs** — [`axum`](https://docs.rs/axum) is the easiest entry point. Build a web app.
-- **Game dev** — [`bevy`](https://bevyengine.org/) is a fully-featured ECS engine, all in Rust. Make a game.
-- **Embedded** — get a £4 Raspberry Pi Pico and run Rust on it via [`embassy`](https://embassy.dev/).
-- **WASM in the browser** — wrap your synth in [`wasm-bindgen`](https://rustwasm.github.io/) and put it on a website.
-- **Open source** — `rustup component add clippy` then go pick an issue tagged `good-first-issue` on a project you use.
+- **For a fully-portable Linux binary**: build with [musl](https://www.musl-libc.org/) to get a fully-static ELF:
 
-Pick one of those. Make a small thing. Show your supervisor. Keep your DofE log going for as long as you keep coding — you'll be glad you did.
+  ```bash
+  rustup target add x86_64-unknown-linux-musl
+  cargo build --release --target x86_64-unknown-linux-musl
+  ```
 
-## Further Reading
+  Note: this requires statically linking libasound, which is not trivial. For a course project, the standard glibc binary plus `cargo-deb` is the right level.
 
-Curated extra material on the topics covered in this session (Polyphony, `--chord` mode, retrospective). All free; all current as of writing.
+- **Web demo.** macroquad supports `wasm32-unknown-unknown`:
 
-- [**Wikipedia — *Polyphony and monophony in instruments***](https://en.wikipedia.org/wiki/Polyphony_and_monophony_in_instruments) — Background on the polyphony/voice-stealing problem we're tackling.
-- [**The Rust community — *Where to go from here***](https://www.rust-lang.org/community) — Forums, Discord, user groups, conferences. The community is one of Rust's best features.
-- [**This Week in Rust** — weekly newsletter](https://this-week-in-rust.org) — The single best way to keep current. Subscribe.
-- [**Are We Game Yet? / Are We Web Yet? / Are We Learning Yet?** — domain-progress trackers](https://wiki.mozilla.org/Areweyet) — Once you've finished this course, these tell you which domains in Rust are ready and which are still maturing — handy for picking your next project.
-- [**Rustlings** — interactive practice problems](https://github.com/rust-lang/rustlings) — Official exercise set. Run through the chapters that match areas you found hard in this course; it's the best drill.
+  ```bash
+  rustup target add wasm32-unknown-unknown
+  cargo build --release --target wasm32-unknown-unknown
+  ```
+
+  Drop the resulting `.wasm` and a small index.html on GitHub Pages — instant playable demo, no install. Worth half an afternoon if you want to share with non-developers.
+
+- **CI.** Add a `.github/workflows/ci.yml` that runs `cargo clippy && cargo fmt --check && cargo test && cargo build --release` on every push. GitHub Actions has Ubuntu runners that match your dev environment perfectly.
+
+---
+
+## Common mistakes
+
+### `cargo clippy` lists 200 warnings
+
+Normal. Work through them. Most are stylistic. The point is to internalise the style, not to fight clippy. Some warnings are genuine smells (e.g. `needless_pass_by_value` — you cloned a `String` when you could have borrowed).
+
+### `cargo fmt` reformatted *everything* including your hand-tuned table
+
+`rustfmt`'s default is "always". Mostly fine. If you have a table you really want preserved, surround it with `#[rustfmt::skip]`:
+
+```rust
+#[rustfmt::skip]
+const NEIGHBOURS_8: [(i32, i32); 8] = [
+    (-1, -1), (-1, 0), (-1, 1),
+    ( 0, -1),          ( 0, 1),
+    ( 1, -1), ( 1, 0), ( 1, 1),
+];
+```
+
+### Tag push fails
+
+`git push origin v1.0.0` may fail with "non-fast-forward" if you already pushed a different `v1.0.0`. Delete and remake:
+
+```bash
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
+git tag -a v1.0.0 -m "..."
+git push origin v1.0.0
+```
+
+### Retrospective feels self-indulgent to write
+
+It isn't. **Future-you doing a coding interview reads this for ammunition.** The interviewer asks "tell me about a project." You don't say "uh, well, I made a thing in Rust." You say *the sentences from your own retrospective*. Worth ten times the time it took to write.
+
+### README links broken when viewed on GitHub
+
+GitHub renders relative links from the file's directory. A link written `Glossary -> GLOSSARY.md` works from the root README, because `GLOSSARY.md` is in the same folder. The same link from `month-3/README.md` needs `../GLOSSARY.md` instead. Test by clicking each link in the GitHub web UI.
+
+### A clippy warning you don't understand
+
+`#[allow(clippy::warning_name)]` above the offending function silences it for that scope. Use sparingly; ideally fix the underlying issue. The warning name is in clippy's output.
 
 ---
 
-## Stuck?
+## Session challenge
 
-You're not the first. Three places that work when you're properly stuck:
+These are *strictly stretch*. The ship is the priority. But if you want extras:
 
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+1. **Web build.** Add a `web/` folder with the index.html + wasm setup. Host on GitHub Pages. Add the URL to the README.
+2. **A unit test suite.** Write tests for `reactions::react()`, `recipes::adjacent_pair`, `simulation::step` (verify empty-grid no-op). Goal: green `cargo test`.
+3. **A blog post.** Write a 1000-word "what I learned building sand-sim in 24 sessions." Post it on dev.to or medium. Link from your README and CV.
+4. **A second simulation.** Use the same architecture (CellType enum, reactions table, modules) to build something *different* — a Conway's Game of Life variant, a forest-fire model, an elevation/erosion sim. Two days' work; doubles the portfolio impact.
 
 ---
-## DofE Log Reminder
 
-Open `dfe/session-log.md`, find row 24, and write a longer entry today (5–10 sentences). This is your **final reflection**:
+## Quick reference
 
-- What was the hardest concept across the 24 sessions?
-- What's something you genuinely surprised yourself by building?
-- Show one of the WAVs to a parent / friend / supervisor — what did they say?
-- What will you build next?
+| What | Code |
+|---|---|
+| Lint | `cargo clippy --all-targets -- -D warnings` |
+| Format | `cargo fmt` |
+| Format check | `cargo fmt --check` |
+| Release build | `cargo build --release` |
+| Run release | `cargo run --release` |
+| Static check | `cargo check` (faster than build) |
+| Tag release | `git tag -a v1.0.0 -m "..."` |
+| Push tag | `git push origin v1.0.0` |
+| Strip binary | `strip target/release/sand-sim` |
+| Web target | `rustup target add wasm32-unknown-unknown` |
+| Deb package | `cargo install cargo-deb && cargo deb` |
 
-Then complete [`dfe/milestone-3-reflection.md`](../../dfe/milestone-3-reflection.md) and write your final personal statement using [`dfe/participant-statement-template.md`](../../dfe/participant-statement-template.md). Print everything, hand the binder to your assessor, and you're done. Well done. 🎚️
+---
+
+## DofE log reminder
+
+Open all three of:
+- [`dfe/session-log.md`](../../dfe/session-log.md) — final session entry
+- [`dfe/milestone-3-reflection.md`](../../dfe/milestone-3-reflection.md) — full retrospective
+- [`dfe/participant-statement-template.md`](../../dfe/participant-statement-template.md) — your participant-statement draft
+
+This is the session that produces the most assessor-facing artefacts. Be specific. Be honest. Be brief — assessors read a lot of statements; concrete impressions beat lengthy claims.
+
+Then close the laptop. **You built something.**

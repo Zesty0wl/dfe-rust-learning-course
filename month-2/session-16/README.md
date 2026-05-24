@@ -1,252 +1,373 @@
-# Session 16: Mini-Project Build Part 2 — Render and Polish
+# Session 16 — Polish and Milestone (v0.2 ships)
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-## What You'll Build
-
-Finish `world-generator`:
-
-- `Display` for `Tile` so each biome prints as one character
-- `World::render()` that returns a `String` of the whole map
-- `World::stats()` that returns a `HashMap<Tile, u32>` of biome counts
-- A proper CLI with `--seed`, `--width`, `--height`, with `Result`-based errors and friendly messages
-- A legend line and a stats line
-
-End result: identical to the demo at the top of [the project README](../project/world-generator/README.md).
+> **Stuck on a word?** Things like *milestone*, *heatmap*, *HUD*, *overlay*, *release tag* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **Where to work today.** This is a project session, so you'll be inside the project folder, not the session folder. From a fresh terminal **at the root of the repo**, run:
->
-> ```bash
-> cd month-2/project/world-generator/starter        # your work-in-progress
-> cargo run -- <args>
-> ```
->
-> The reference implementation lives in `month-2/project/world-generator/solution/` — peek only when you're properly stuck. All `cargo run` commands shown below assume you're inside `month-2/project/world-generator/starter/`.
+## The Goal
 
-## Step-by-Step Walkthrough
+By the end of this session **`sand-sim` v0.2 ships**. It has a toggleable heat-map overlay, an on-screen element counter, three new audio events (fire crackle, lava sizzle, oil-ignition thump), a tuned reactions table, and a git tag `v0.2`.
 
-Continuing in `starter/src/main.rs`.
+---
 
-### 1. Implement `Display` for `Tile`
+## What you'll learn
+
+- The polish discipline — what to do when the program already "works"
+- Toggling debug overlays without bloating the main loop
+- Audio with multiple sound sources, played at the right times
+- Balancing constants by feel (and how to know when to stop)
+- The release ceremony: commit, tag, push, reflect
+
+---
+
+## The big idea
+
+You've shipped one milestone already (Session 8). This one is bigger: more elements, more complex chemistry, three sounds, an overlay. The discipline is the same — declare what counts as "done," do *exactly* that, ship.
+
+The temptation in a project session is to keep adding "just one more thing." Resist. Each addition is a future maintenance cost. **Cut the scope, polish what's there, ship.**
+
+---
+
+## Concepts covered
+
+- Toggleable overlay rendering (`if heatmap { ... }`)
+- Multiple `Sound` handles in a single `main`
+- Per-event cooldowns to avoid audio spam
+- The "element count" HUD from Session 13, now permanently on
+- Constant tuning by side-by-side comparison
+- `git tag -a v0.2`
+
+---
+
+## Building towards `sand-sim`
+
+This session caps Month 2. `month-2/milestone/sand-sim-v0.2/` becomes the snapshot tagged `v0.2`. Month 3 starts by copying it to `month-3/milestone/sand-sim-v1.0/`. The element counter HUD becomes the Session 20 codex layout. The heat-map overlay becomes the Session 17 module split's first new module.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** Session 15 finished. Lava, ice, acid, fire, oil, steam, smoke, wood, water, sand, stone — eleven elements (counting empty) all interact via the reactions table. Brush, selector, hold-to-pause, clear, FPS counter all work from Session 8.
+
+### 1. Heat-map overlay — 5 minutes
+
+A debug view that colours every cell by temperature, overriding its normal colour. Toggle with `T`.
 
 ```rust
-use std::fmt;
+let mut heatmap_enabled = false;
 
-impl fmt::Display for Tile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let c = match self {
-            Tile::Ocean    => '~',
-            Tile::Plains   => '▒',
-            Tile::Forest   => '▓',
-            Tile::Mountain => '▲',
-            Tile::Desert   => '.',
-        };
-        write!(f, "{}", c)
-    }
-}
+// In input block:
+if is_key_pressed(KeyCode::T) { heatmap_enabled = !heatmap_enabled; }
 ```
 
-Now `print!("{}", tile)` works. The Unicode block characters render in any modern terminal.
-
-### 2. `render()` builds the whole map as a single `String`
+Render the grid with a branch:
 
 ```rust
-impl World {
-    fn render(&self) -> String {
-        let mut s = String::new();
-        s.push_str(&format!("Seed: {}  |  World: {}x{}\n", self.seed, self.width, self.height));
-        for row in &self.grid {
-            for tile in row {
-                s.push_str(&format!("{}", tile));
+        for row in 0..ROWS {
+            for col in 0..COLS {
+                let cell = grid[row][col];
+                if cell.is_empty() { continue; }
+                let x = col as f32 * CELL_SIZE;
+                let y = row as f32 * CELL_SIZE;
+                let colour = if heatmap_enabled {
+                    heatmap_colour(cell.temperature)
+                } else {
+                    cell.render_colour()
+                };
+                draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, colour);
             }
-            s.push('\n');
         }
-        s
-    }
-}
 ```
 
-Why return a `String` instead of just `print!`-ing? **Testability**. A function that returns a string can be unit-tested; a function that prints can't (easily). Also, your `main` can choose to send the output anywhere — stdout, a file, the network. Separation of concerns.
-
-### 3. `stats()` with `HashMap` and `flatten`
+Define the heatmap colour function:
 
 ```rust
-use std::collections::HashMap;
-
-impl World {
-    fn stats(&self) -> HashMap<Tile, u32> {
-        let mut counts: HashMap<Tile, u32> = HashMap::new();
-        for tile in self.grid.iter().flatten() {
-            *counts.entry(*tile).or_insert(0) += 1;
-        }
-        counts
+fn heatmap_colour(temperature: f32) -> Color {
+    // Map temperature to a colour ramp:
+    // -50°C blue -> 0°C cyan -> 100°C white -> 500°C orange -> 1500°C red.
+    let t = ((temperature + 50.0) / 1550.0).clamp(0.0, 1.0);
+    // Simple piecewise ramp.
+    if t < 0.25 {
+        let u = t / 0.25;
+        Color::new(0.0, u, 1.0, 1.0)
+    } else if t < 0.5 {
+        let u = (t - 0.25) / 0.25;
+        Color::new(u, 1.0, 1.0 - u, 1.0)
+    } else if t < 0.75 {
+        let u = (t - 0.5) / 0.25;
+        Color::new(1.0, 1.0 - u * 0.5, 0.0, 1.0)
+    } else {
+        let u = (t - 0.75) / 0.25;
+        Color::new(1.0, 0.5 - u * 0.5, 0.0, 1.0)
     }
 }
 ```
 
-The `*counts.entry(*tile).or_insert(0) += 1;` is the canonical counting idiom from Session 11. The `*tile` (deref) is needed because `iter().flatten()` gives `&Tile` and we want owned `Tile` (cheap because `Copy`).
+**Press `T`** while the sim is running with a fire-and-water demo. The whole grid recolours as a thermal map. Press again to return to normal. Adds about 10 seconds of "feels professional" to the visual demo.
 
-### 4. The CLI
+### 2. Audio events — 6 minutes
+
+Three new sounds to source from freesound.org (filter to CC0):
+
+- `fire.wav` — low crackle (or two-second loop you'll re-trigger).
+- `lava.wav` — wet sizzle.
+- `boom.wav` — short thump for oil ignition.
+
+Drop them all in `assets/`. Update CREDITS.md:
+
+```markdown
+# Audio credits — sand-sim v0.2
+
+- `sand.wav` — short sand-pour SFX, CC0, sourced from <freesound.org/...> on YYYY-MM-DD.
+- `fire.wav` — fire crackle, CC0, sourced from <freesound.org/...> on YYYY-MM-DD.
+- `lava.wav` — lava sizzle, CC0, sourced from <freesound.org/...> on YYYY-MM-DD.
+- `boom.wav` — explosion thump, CC0, sourced from <freesound.org/...> on YYYY-MM-DD.
+```
+
+Load them all:
 
 ```rust
-#[derive(Debug)]
-enum ArgError {
-    NotANumber(String, String),    // (name, value)
-    OutOfRange(String, u64),       // (name, value)
-    MissingValue(String),
-}
-
-struct Args { seed: u64, width: usize, height: usize }
-
-fn parse_args() -> Result<Args, ArgError> {
-    let mut seed: u64 = 0;
-    let mut width: usize = 80;
-    let mut height: usize = 24;
-
-    let raw: Vec<String> = std::env::args().collect();
-    let mut i = 1;
-    while i < raw.len() {
-        match raw[i].as_str() {
-            "--seed" => {
-                let v = raw.get(i + 1).ok_or_else(|| ArgError::MissingValue("--seed".into()))?;
-                seed = v.parse().map_err(|_| ArgError::NotANumber("--seed".into(), v.clone()))?;
-                i += 2;
-            }
-            "--width" => { /* like above with range check 5..=400 */ }
-            "--height" => { /* like above with range check 3..=200 */ }
-            _ => i += 1,
-        }
-    }
-    Ok(Args { seed, width, height })
-}
+let sand_sound  = load_sound("assets/sand.wav").await.unwrap();
+let fire_sound  = load_sound("assets/fire.wav").await.unwrap();
+let lava_sound  = load_sound("assets/lava.wav").await.unwrap();
+let boom_sound  = load_sound("assets/boom.wav").await.unwrap();
 ```
 
-Look at the full version in `solution/src/main.rs` — it has all three branches plus a `--help` flag.
-
-### 5. `main` ties it together
+Trigger each based on grid state, with per-sound cooldowns:
 
 ```rust
-use std::process::ExitCode;
+let mut cd_sand: u32 = 0;
+let mut cd_fire: u32 = 0;
+let mut cd_lava: u32 = 0;
+let mut cd_boom: u32 = 0;
 
-fn main() -> ExitCode {
-    let args = match parse_args() {
-        Ok(a) => a,
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            return ExitCode::from(1);
-        }
-    };
+// inside loop, after `step(&mut grid)`:
 
-    let world = World::generate(args.seed, args.width, args.height);
-    print!("{}", world.render());
-    println!();
-    println!("Legend: ~ Ocean  ▒ Plains  ▓ Forest  ▲ Mountains  . Desert");
+// Tick all cooldowns down.
+for cd in [&mut cd_sand, &mut cd_fire, &mut cd_lava, &mut cd_boom] {
+    if *cd > 0 { *cd -= 1; }
+}
 
-    let stats = world.stats();
-    let order = [Tile::Ocean, Tile::Plains, Tile::Forest, Tile::Mountain, Tile::Desert];
-    let mut parts: Vec<String> = Vec::new();
-    for t in order {
-        let n = stats.get(&t).copied().unwrap_or(0);
-        parts.push(format!("{} {}", tile_name(&t), n));
+let counts = count_cells(&grid);
+
+// Sand pour while button held.
+if selected == CellType::Sand && is_mouse_button_down(MouseButton::Left) && cd_sand == 0 {
+    play_sound_once(&sand_sound);
+    cd_sand = 18;
+}
+
+// Fire crackle while *any* fire is present.
+if (counts.get(&CellType::Fire).copied().unwrap_or(0) > 0
+    || counts.get(&CellType::OilFire).copied().unwrap_or(0) > 0) && cd_fire == 0 {
+    play_sound_once(&fire_sound);
+    cd_fire = 90;        // ~1.5 seconds between crackle plays
+}
+
+// Lava sizzle when lava is touching water (presence-based).
+if counts.get(&CellType::Lava).copied().unwrap_or(0) > 0
+    && counts.get(&CellType::Steam).copied().unwrap_or(0) > 5
+    && cd_lava == 0 {
+    play_sound_once(&lava_sound);
+    cd_lava = 60;
+}
+
+// Boom on oil ignition — detect the count rising.
+if let Some(_) = oil_just_ignited(&counts, &mut prev_oilfire_count) {
+    if cd_boom == 0 {
+        play_sound_once(&boom_sound);
+        cd_boom = 30;
     }
-    println!("Stats:  {}", parts.join("  "));
-
-    ExitCode::SUCCESS
 }
 ```
 
-`ExitCode` is a return type for `main` that lets you set the exit status cleanly. Returning `ExitCode::SUCCESS` is `0`; `ExitCode::from(1)` is `1`. Shells and CI pick this up.
+The `oil_just_ignited` helper compares this frame's oil-fire count to the previous frame's:
 
-> Add a small helper `fn tile_name(t: &Tile) -> &'static str` (the solution puts it on the `Tile` impl as `t.name()`). Using `Tile::Mountain` as a key requires `Tile` to derive `Eq, Hash` — which we did in Session 15.
+```rust
+fn oil_just_ignited(counts: &HashMap<CellType, usize>, prev: &mut usize) -> Option<()> {
+    let now = counts.get(&CellType::OilFire).copied().unwrap_or(0);
+    let jumped = now > *prev + 3;     // a "jump" of more than 3 cells per frame
+    *prev = now;
+    if jumped { Some(()) } else { None }
+}
+```
 
-### 6. Try it
+You'll need a `let mut prev_oilfire_count: usize = 0;` above the loop.
+
+### 3. Tune the reactions — 5 minutes
+
+Now you have audio, you'll *hear* when reactions are wrong (boom playing twice for one event, lava sizzling forever even after the water's gone). Spend 5 minutes adjusting:
+
+- Cool-down lengths for each sound
+- Probability of fire spreading via the table (`probability: 0.5` for fire+wood feels different from `1.0`)
+- Lava's neighbour-heat amount (raise from 40 to 60 and lava becomes more "menacing")
+
+The goal isn't perfection. The goal is: *the demo you'd send to a friend feels good for two minutes*.
+
+### 4. Permanent element counter HUD — 2 minutes
+
+Move the Session 13 `count_cells` HUD out of "optional" and into the always-on render block. Bottom-right corner:
+
+```rust
+let counts = count_cells(&grid);
+let mut y = screen_height() - 8.0 - 16.0 * counts.len() as f32;
+let mut entries: Vec<(CellType, usize)> = counts.into_iter().collect();
+entries.sort_by(|a, b| b.1.cmp(&a.1));        // descending by count
+for (cell_type, count) in entries {
+    let line = format!("{:>5}  {}", count, cell_type.name());
+    draw_text(&line, screen_width() - 130.0, y, 16.0, LIGHTGRAY);
+    y += 16.0;
+}
+```
+
+Re-runs `count_cells` each frame (cheap; the simulation is already O(rows × cols)).
+
+### 5. README and milestone — 5 minutes
+
+Replace `month-2/milestone/sand-sim-v0.2/README.md` with the real thing:
+
+```markdown
+# sand-sim v0.2
+
+A real-time falling-sand chemistry sandbox in Rust. Eleven elements (sand, water, stone, wood, fire, smoke, oil, oilfire, steam, acid, lava, ice) with table-driven reactions, temperature simulation, and audio.
+
+## Run
 
 ```bash
-cargo run -- --seed 42 --width 60 --height 20
-cargo run -- --seed 42 --width 60 --height 20    # same output
-cargo run -- --seed 7  --width 60 --height 20    # totally different
-cargo run -- --seed banana                       # nice error message
-cargo run -- --width 999                         # out of range error
-cargo run -- --help
+cargo run --release
 ```
 
----
+## Controls
 
-## Optional: Colour with `colored`
+- **1-9** — select sand, water, stone, wood, fire, oil, acid, lava, ice
+- **H** — toggle heat-source brush (next click drops at 200°C)
+- **T** — toggle heat-map overlay
+- **L-click drag** — paint
+- **R-click drag** — erase
+- **Scroll** — brush size
+- **Space** — pause / unpause
+- **C** — clear
 
-Edit `Cargo.toml`:
+## Architecture
 
-```toml
-[dependencies]
-colored = "2.1"
+- `Cell { cell_type, temperature, lifetime }` — the per-cell unit.
+- `REACTIONS: HashMap<(CellType, CellType), ReactionOutcome>` — every pairwise interaction lives here.
+- Three update passes per frame: reactions → top-to-bottom (rising) → bottom-to-top (falling).
+
+## Credits
+
+Audio: see `assets/CREDITS.md` (alongside this README inside the milestone folder).
+
+## What's next
+
+Month 3 (see `month-3/README.md` at the repo root) adds modules, save/load, a recipe-based discovery system, the codex UI, and ships v1.0.
 ```
 
-Then in `render()`:
+Complete [`dfe/milestone-2-reflection.md`](../../dfe/milestone-2-reflection.md). Same as Session 8 — be specific.
 
-```rust
-use colored::Colorize;
+### 6. Commit and tag — 2 minutes
 
-let coloured: String = match tile {
-    Tile::Ocean    => "~".blue().to_string(),
-    Tile::Plains   => "▒".green().to_string(),
-    Tile::Forest   => "▓".bright_green().to_string(),
-    Tile::Mountain => "▲".white().to_string(),
-    Tile::Desert   => ".".yellow().to_string(),
-};
+From the repo root:
+
+```bash
+git add -A
+git commit -m "Ship sand-sim v0.2 — chemistry, heatmap, audio"
+git tag -a v0.2 -m "Month 2 milestone: table-driven reactions, 9 new elements, audio"
+git push origin main
+git push origin v0.2
 ```
 
-Run `cargo build` once to download `colored` (you'll need internet). The whole map will now be coloured in any modern terminal.
+> **The Wow Moment.** Run `cargo run --release`. Press `H` once. Build a stone tower with a tiny pool of oil inside. Drop a single fire cell on the oil. **Hear the *thump*.** Watch the oil race into flame, lava-coloured flames, smoke billowing. Press `T`. **See the heat propagating outward as a thermal map.** Press `T` again. **Listen to the fire crackle continue until the oil is gone.** You built a real-time physics simulator that the average person would assume was made by a small studio. *In 16 sessions.*
 
 ---
 
-## Common Mistakes
+## Linux (Ubuntu) note
 
-- **`HashMap<Tile, u32>` errors with "trait `Hash` not implemented"** — derive `Hash, Eq` on `Tile`.
-- **Integer overflow on `width * height`** — for sane sizes this is fine, but if you allow huge values, the multiplication can overflow `usize` on 32-bit systems. The range checks (5..=400, 3..=200) prevent this.
-- **Forgetting `print!` vs `println!`** — `render()` already includes newlines; using `println!("{}", world.render())` adds a blank line.
-- **CLI arg parsing crash on `--seed` at the end with no value** — that's exactly what `MissingValue` handles. Triggers when `raw.get(i + 1)` returns `None`.
+The audio polish doubles down on the Session 8 audio guidance. Quick checklist before shipping v0.2 on Ubuntu:
+
+```bash
+# 1. ALSA headers installed?
+dpkg -l libasound2-dev | grep ii
+
+# 2. PipeWire running?
+systemctl --user status pipewire pipewire-pulse | grep Active
+
+# 3. Audio device picked correctly?
+pactl list short sinks
+```
+
+If all three are happy, your four sounds should play. Specific to v0.2:
+
+- **Multiple simultaneous sounds.** macroquad on Linux mixes via the chosen backend. On PipeWire you may notice all four sounds layer correctly. On older PulseAudio-only systems, you may get ducking — the latest-triggered sound takes priority and earlier ones are cut. Cosmetic.
+- **Performance with 11 elements.** Even a busy grid with hundreds of reacting cells should stay above 55 FPS in `--release` on a modern Ubuntu laptop. If you're seeing drops, try:
+
+  ```bash
+  cargo build --release
+  ./target/release/sand-sim
+  ```
+
+  Bypassing `cargo run` shaves ~5ms of process-startup overhead.
+- **Distributing the binary.** `target/release/sand-sim` is a dynamically-linked ELF that depends on libc, libasound, libGL, and libX11. To check: `ldd target/release/sand-sim`. Anyone running a similar-or-newer Ubuntu (or any glibc-based distro) should be able to run the binary if you also ship the `assets/` folder next to it.
+
+---
+
+## Common mistakes
+
+### Audio plays for a millisecond then stops
+
+You probably called `play_sound_once` once per frame at 60Hz — each new call cuts the previous. Add cooldowns (step 2 above) so a sound triggers once and is allowed to play to completion.
+
+### Boom sound triggers continuously while oil burns
+
+The `oil_just_ignited` detector needs to compare *frame-to-frame*. Make sure `prev_oilfire_count` is updated *inside* the detector, not outside. The version above does it correctly.
+
+### Heatmap colours look wrong (all blue)
+
+The `t` calculation is off. Verify temperatures are reaching the high end during a fire demo (`println!` the max temperature). Adjust the `+ 50.0 / 1550.0` divisors to match your actual temperature range.
+
+### `git tag v0.2 already exists`
+
+You retried this session. Delete the old tag and remake: `git tag -d v0.2 && git push origin :refs/tags/v0.2 && git tag -a v0.2 ...`.
+
+### Linker error on Ubuntu when adding new sounds
+
+Means `libasound2-dev` isn't installed (or wasn't installed before the first `cargo build`). Install it (`sudo apt install -y libasound2-dev`), then `cargo clean && cargo build`.
+
+### Performance tanks even in --release
+
+Your `count_cells` is being called more than once per frame somehow. Search for `count_cells(` — should appear twice (once for HUD, once for audio triggers). Combine into a single call and pass the `HashMap` to both.
 
 ---
 
-## Milestone 2 Reflection
+## Session challenge
 
-You've finished the second project. Open [`../../dfe/milestone-2-reflection.md`](../../dfe/milestone-2-reflection.md) and fill it in *now* while it's fresh:
+Pick one — no solution provided. (Milestone first; these are stretch.)
 
-- What did Month 2 teach you that Month 1 didn't?
-- What's something that confused you for a while and then suddenly clicked?
-- How does your code feel different from the Month 1 project? More structured? More confident?
-
-Without this reflection, the milestone doesn't really exist on paper. **Write it today.**
-
----
-
-## Further Reading
-
-Curated extra material on the topics covered in this session (Project — Render and Polish (part 2)). All free; all current as of writing.
-
-- [**Red Blob Games — *Hexagonal grids* and *Square grids***](https://www.redblobgames.com/grids/hexagons/) — If you ever want to take the world generator further. Beautiful interactive examples.
-- [**ANSI escape codes** — Wikipedia](https://en.wikipedia.org/wiki/ANSI_escape_code) — What the `colored` crate is generating under the hood. Useful when colour breaks in unusual terminals.
-- [**Tom Forsyth — *Procedural content generation***](https://tomforsyth1000.github.io/blog.wiki.html) — Game-industry blog with assorted procedural content techniques. Good for inspiration once you've shipped Milestone 2.
+1. **Snapshot key.** Press `P` to write `screenshot.png` of the current grid (without HUD). `get_screen_data().export_png("screenshot.png")` writes the entire window; for grid-only, build the image manually from the grid.
+2. **Recordable demo.** Save the current state every 60 frames to `recording-N.json`. Add a playback flag (`--play` on command line) that reads them back in sequence. Excellent for capturing demo loops.
+3. **A "reaction trace" mode.** Print to the terminal every time the reaction table is hit. After 5 seconds of running, you have a log of every chemistry event the sim performed. Useful evidence for the DofE log.
+4. **A "no audio" build.** Run with `--no-default-features` and gate all the `play_sound_once` calls behind `#[cfg(feature = "audio")]`. Useful for headless testing and CI.
 
 ---
 
-## Stuck?
+## Quick reference
 
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
+| What | Code |
+|---|---|
+| Multiple sounds | `let s1 = load_sound("a.wav").await?; let s2 = ...` |
+| Per-sound cooldown | `if cd == 0 { play_sound_once(&s); cd = N; }` |
+| Toggle overlay | `if is_key_pressed(T) { heatmap = !heatmap; }` |
+| Sort HashMap entries | `entries.sort_by(\|a, b\| b.1.cmp(&a.1))` |
+| HUD bottom-right | `draw_text(&line, screen_width() - 130.0, y, 16.0, LIGHTGRAY)` |
+| Tag a release | `git tag -a v0.2 -m "..." && git push origin v0.2` |
 
 ---
-## DofE Log Reminder
 
-Row 16 — and your **second milestone** is now complete. Two thirds of your DofE evidence is in the bag.
+## DofE log reminder
 
-Next month: the synthesizer.
+Open both [`dfe/session-log.md`](../../dfe/session-log.md) and [`dfe/milestone-2-reflection.md`](../../dfe/milestone-2-reflection.md). For Session 16 specifically:
+
+- A short clip of the heatmap overlay during a busy chemistry demo (toggle visible)
+- The link to the v0.2 release on your GitHub
+- One paragraph contrasting v0.1 and v0.2 — what does v0.2 do that would have been *unthinkable* at the end of Session 8?
+
+→ Onwards to [Month 3: The Alchemy Game](../../month-3/README.md).

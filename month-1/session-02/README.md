@@ -1,272 +1,254 @@
-# Session 2: Variables, Types, and Mutability
+# Session 2 — Variables, Types, and Giving Sand a Colour
 
-> 📖 **Stuck on a term?** Words like *immutable*, *compiler*, *borrow*, *trait* etc. are all defined in plain English in the [GLOSSARY.md](../../GLOSSARY.md) at the repo root.
-
-> 🎹 **New to music theory?** Notes, octaves, scales, MIDI numbers, frequencies — they're all explained from scratch in the [MUSIC-THEORY-PRIMER.md](../../MUSIC-THEORY-PRIMER.md) (10-minute read, has a labelled piano-keyboard diagram). You don't need to be a musician to do this course.
-
-## What You'll Learn
-
-How Rust thinks about data: declaring variables, choosing types, when (and how) values are allowed to change, and what a "12th root of two" has to do with the white key next to A on a piano.
-
-## The Big Idea
-
-Rust gives every variable two properties at birth: a **[type](../../GLOSSARY.md#type--type-system)** (what kind of thing it is) and a **mutability** (whether you're allowed to change it). Most other languages make everything [mutable](../../GLOSSARY.md#mutable) by default. Rust flips that. **[Immutability](../../GLOSSARY.md#immutable) is the default**, and you opt into mutation with `mut`. This sounds restrictive — and that's the point. The compiler can reason much more confidently about code that doesn't randomly change underneath it.
-
-## Concepts Covered
-
-- `let` and `let mut`
-- Scalar types: `i32`, `u64`, [`f64`](../../GLOSSARY.md#floating-point-number-f32-f64), `bool`, `char`
-- Type inference vs explicit annotations
-- **Shadowing** — a Rust-specific trick that looks like mutation but isn't
-- [Integer overflow](../../GLOSSARY.md#integer-overflow) in debug vs release builds
-- Numeric literals: `1_000_000`, `0xff`, `0b1010`, `3.14_f64`
-
-## Building Towards `music-theory-cli`
-
-The mini-project hinges on storing note names, MIDI numbers, and frequencies. Today we cover the types you'll use to do that — and we'll introduce the **frequency formula for musical notes**, which we use again in Session 3, Session 18, and the entire final project.
+> **Stuck on a word?** Things like *immutable*, *mutable*, *constant*, *cast* are defined in plain English in the repo's [GLOSSARY.md](../../GLOSSARY.md).
 
 ---
 
-> 💡 **How to run the examples in this session.** Every example below lives in its own folder under `month-1/session-02/examples/`. From a fresh terminal **at the root of the repo**, run:
+## The Goal
+
+By the end of this session your sandbox will store **typed elements** — not just raw `1`s — and clicking will draw whichever element you've selected, in its own colour.
+
+---
+
+## What you'll learn
+
+- The difference between `let` and `let mut`, and why Rust insists on the distinction
+- Rust's scalar number types — `u8`, `usize`, `i32`, `f32` — and how to choose between them
+- `const` for values that never change
+- `if`/`else if`/`else` for branching
+- How a tiny helper function can turn a one-line magic number into self-documenting code
+
+---
+
+## The big idea
+
+Right now your grid stores `u8` values, but a `1` is just a `1` — the code has no idea whether `1` means *sand*, *water*, or *the third element you'll add next session*. **Types and names are how you make a program understand its own data.**
+
+Two tools today. `const` gives a number a permanent, all-caps name (`SAND = 1`). And a tiny function — `cell_colour(c: u8) -> Color` — maps that name to whatever colour you want on screen. Now `grid[y][x] = SAND` reads like English, and changing the sand colour is a one-line edit.
+
+This is **the** programming superpower: replacing magic numbers with names and small functions. Half of professional Rust is just this, repeated.
+
+---
+
+## Concepts covered
+
+- `let`, `let mut`, *immutable by default*
+- Scalar types: `u8`, `usize`, `i32`, `f32`, `bool`
+- Type inference vs explicit annotations (`let x: u8 = 0;`)
+- `const` for compile-time constants
+- `if`/`else if`/`else` returning a value
+- macroquad's `Color::new(r, g, b, a)` constructor
+- `is_key_pressed(KeyCode::...)` for one-shot key events
+
+---
+
+## Building towards `sand-sim`
+
+Last session your grid held raw `u8`s and every drawn cell was yellow. Today it'll still hold `u8`s — the upgrade to a proper `enum` waits until Session 6 — but the *meaning* of those bytes will be pinned down with named constants. Tomorrow (Session 3) sand starts falling, and the gravity rule needs to know what's sand and what isn't. Named constants make that rule readable: `if grid[y+1][x] == EMPTY { ... }`.
+
+You'll also lay the keyboard groundwork for the element selector that lands in Session 7.
+
+---
+
+## Step-by-step walkthrough
+
+> **Where you should be.** You've finished [Session 1](../session-01/README.md). Your `sand-sim/` folder opens a window and clicking draws yellow squares. If not, fix that first — every session builds on the last.
+
+### 1. Open the project and name the elements — 3 minutes
+
+Open `src/main.rs` in VS Code. Just below `use macroquad::prelude::*;` add these constants:
+
+```rust
+const COLS: usize = 120;
+const ROWS: usize = 80;
+const CELL_SIZE: f32 = 6.0;
+
+// Element identifiers — stored in the grid as plain u8.
+const EMPTY: u8 = 0;
+const SAND:  u8 = 1;
+const WATER: u8 = 2;
+const STONE: u8 = 3;
+```
+
+(You probably already have the first three from Session 1. Move them up if not, and add the four element constants.)
+
+**What's a `const`?** A constant. A name attached to a value that *never* changes during the program. You write them in `SCREAMING_SNAKE_CASE` by convention so a reader instantly knows "this is fixed at compile time." Constants are zero-cost — the compiler inlines them.
+
+**Why `u8`?** A `u8` is an *unsigned 8-bit integer*: values 0–255. We only need four element types, so the smallest integer that fits is plenty. (`u8` also takes one byte of memory per cell. The whole 120 × 80 grid is 9,600 bytes. Pleasingly small.)
+
+### 2. A colour for each element — 4 minutes
+
+Just below the constants, add a helper function:
+
+```rust
+fn cell_colour(cell: u8) -> Color {
+    if cell == SAND {
+        Color::new(0.95, 0.78, 0.40, 1.0)   // warm sand yellow
+    } else if cell == WATER {
+        Color::new(0.20, 0.55, 0.95, 1.0)   // ocean blue
+    } else if cell == STONE {
+        Color::new(0.55, 0.55, 0.60, 1.0)   // grey
+    } else {
+        BLACK                               // EMPTY or anything unknown
+    }
+}
+```
+
+**What this does.** Takes a `u8`, returns a macroquad `Color`. `Color::new(r, g, b, a)` builds a colour from four floats in the range `0.0 – 1.0`:
+
+- `r`, `g`, `b` — the red, green, and blue channels
+- `a` — the alpha (transparency); `1.0` is fully opaque
+
+`BLACK` is a constant that macroquad's prelude exposes (it's just `Color::new(0.0, 0.0, 0.0, 1.0)`).
+
+**Why a function?** Imagine if every drawing site in your code had its own copy of the colour values. Change sand from yellow to pink and you'd have to find every spot. With a function there's one place to change. (This is **DRY**: Don't Repeat Yourself. You'll see this advice constantly.)
+
+### 3. Use the helper in the drawing loop — 2 minutes
+
+Find your drawing loop from Session 1 and update it:
+
+```rust
+        for row in 0..ROWS {
+            for col in 0..COLS {
+                let cell = grid[row][col];
+                if cell != EMPTY {
+                    let x = col as f32 * CELL_SIZE;
+                    let y = row as f32 * CELL_SIZE;
+                    draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, cell_colour(cell));
+                }
+            }
+        }
+```
+
+The only real change: `YELLOW` → `cell_colour(cell)`. The `if cell != EMPTY` is the same as before, just using the named constant.
+
+**First runnable checkpoint.** Save. `cargo run`. Click around — sand still appears yellow, because you've only been drawing sand. The wow comes in step 4.
+
+### 4. Pick which element to draw — 6 minutes
+
+Above the `loop`, add a mutable variable to track the currently selected element:
+
+```rust
+    let mut selected: u8 = SAND;
+```
+
+Note the `mut`. Without it, you couldn't reassign `selected` later. **Rust variables are immutable by default**, which is the opposite of most languages — and one of the reasons Rust code is so reliable. You opt in to mutation, and the compiler audits every change.
+
+Now, inside the `loop`, just after `clear_background(BLACK);`, handle the number keys:
+
+```rust
+        if is_key_pressed(KeyCode::Key1) { selected = SAND;  }
+        if is_key_pressed(KeyCode::Key2) { selected = WATER; }
+        if is_key_pressed(KeyCode::Key3) { selected = STONE; }
+```
+
+And update the mouse handler to use `selected` instead of the hard-coded `1`:
+
+```rust
+        if is_mouse_button_down(MouseButton::Left) {
+            let (mx, my) = mouse_position();
+            let col = (mx / CELL_SIZE) as usize;
+            let row = (my / CELL_SIZE) as usize;
+            if row < ROWS && col < COLS {
+                grid[row][col] = selected;
+            }
+        }
+```
+
+Save. Run.
+
+**Press `1`, click and drag — sand. Press `2`, click and drag — water. Press `3` — stone.**
+
+> **The Wow Moment.** Open `cell_colour`. Change the sand line to something vivid:
 >
-> ```bash
-> cd month-1/session-02/examples/<example-folder>
-> cargo run
+> ```rust
+> Color::new(1.0, 0.2, 0.8, 1.0)   // electric pink sand
 > ```
 >
-> Replace `<example-folder>` with the name shown in each section (e.g. `chromatic_scale`). Always start `cd`-ing from the repo root so you don't get lost.
+> Save. Run. **Every sand cell, instantly pink.** You changed *one number in one place* and the whole simulation updated. That's what naming gets you. Set it back to a sensible colour before Session 3, when sand starts to fall.
 
-## Step-by-Step Walkthrough
+### 5. (Optional) Show the selected element — 3 minutes
 
-### 1. `let` is a binding, not an assignment
-
-```rust
-fn main() {
-    let a4_frequency = 440.0;
-    println!("A4 is {} Hz", a4_frequency);
-}
-```
-
-Run it: `cargo run`. You'll see `A4 is 440 Hz`.
-
-What's the type of `a4_frequency`? Rust **[inferred](../../GLOSSARY.md#type-inference)** it from the literal `440.0` — that decimal point makes it an `f64` (a 64-bit floating-point number). If you want to spell it out:
+Just before `next_frame().await;`, add:
 
 ```rust
-let a4_frequency: f64 = 440.0;
+        let label = if selected == SAND { "SAND" }
+                    else if selected == WATER { "WATER" }
+                    else if selected == STONE { "STONE" }
+                    else { "?" };
+        draw_text(label, 8.0, 20.0, 24.0, WHITE);
 ```
 
-### 2. Variables are immutable by default
+Press `1`, `2`, `3` — the label updates. **Notice the whole `if` chain is one expression**: in Rust, `if`/`else` is an expression that returns a value, like the `?:` ternary in other languages but cleaner. Every branch must produce the same type (here, `&str`).
 
-Try this:
-
-```rust
-fn main() {
-    let frequency = 440.0;
-    frequency = 880.0;            // 💥
-    println!("{}", frequency);
-}
-```
-
-```
-error[E0384]: cannot assign twice to immutable variable `frequency`
-  |
-2 |     let frequency = 440.0;
-  |         --------- first assignment to `frequency`
-3 |     frequency = 880.0;
-  |     ^^^^^^^^^^^^^^^^^ cannot assign twice to immutable variable
-```
-
-The compiler is your friend here. It's telling you exactly what's wrong and pointing at both relevant lines.
-
-### 3. Opt in with `mut`
-
-```rust
-fn main() {
-    let mut frequency = 440.0;
-    println!("Starting at {} Hz", frequency);
-    frequency *= 2.0;
-    println!("One octave up: {} Hz", frequency);
-}
-```
-
-Output:
-
-```
-Starting at 440 Hz
-One octave up: 880 Hz
-```
-
-The rule: doubling the frequency raises a note by exactly one octave. That's just how human hearing works — and now you know why a piano has the same key pattern repeating.
-
-### 4. The chromatic scale
-
-In Western music there are **12 semitones in an octave**, and the frequency ratio between adjacent semitones is the **twelfth root of 2**. Let's print every semitone from A4 (440 Hz) up an octave:
-
-```rust
-fn main() {
-    let a4 = 440.0_f64;
-    let ratio = 2.0_f64.powf(1.0 / 12.0);
-    let mut frequency = a4;
-
-    let names = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
-
-    for name in names {
-        println!("{:>2}: {:>7.2} Hz", name, frequency);
-        frequency *= ratio;
-    }
-
-    println!("A5: {:>7.2} Hz (should be ~880)", frequency);
-}
-```
-
-This is a complete, runnable example — see `examples/chromatic_scale/`.
-
-> The maths: `2^(1/12) ≈ 1.05946`. Multiply twelve times and you get exactly 2. Twelve semitones, one octave. Elegant.
-
-### 5. Shadowing — Rust's trick that looks like mutation
-
-What if you want to "change" a variable's type? You can't — but you *can* re-declare it with the same name:
-
-```rust
-let midi_note = "69";                  // a &str (text)
-let midi_note: u8 = midi_note.parse().unwrap();   // now a u8 (number)
-println!("MIDI note: {}", midi_note);
-```
-
-This isn't mutation. It's a brand-new variable that happens to share the name. The old `midi_note` is gone after the second `let`. Useful when parsing input or transforming a value through stages.
-
-### 6. Integer types matter
-
-```rust
-let small: u8 = 200;
-let bigger: u8 = small + 100;     // 💥 overflow!
-```
-
-`u8` holds values 0–255. `200 + 100` is 300, which doesn't fit. **In debug builds (`cargo run`)**, Rust panics with a clear error. **In release builds (`cargo run --release`)**, Rust wraps around for performance — `300 % 256 = 44`. That's a foot-gun if you're not aware. Pick types with enough room.
-
-For most general arithmetic, prefer `i64` (signed) or `u64` (unsigned). Use `u8` when you genuinely mean a byte (like a MIDI note number, which ranges 0–127).
-
-### 7. Booleans and characters
-
-```rust
-let is_playing: bool = true;
-let key_symbol: char = '♪';     // single Unicode scalar, single quotes
-println!("{} is_playing? {}", key_symbol, is_playing);
-```
-
-`char` in Rust is **4 bytes** and holds any Unicode code point — including emoji and music symbols.
-
-### 8. Numeric literals are flexible
-
-```rust
-let million = 1_000_000;          // underscores for readability
-let hex = 0xff;                   // 255
-let binary = 0b1010;              // 10
-let pi = 3.14159_f64;             // type suffix
-let velocity: u8 = 127;
-```
-
-Underscores are ignored by the compiler — they're just for your eyes. Prefer them for big numbers.
+This is also a preview of `match`, which lands in Session 5 and replaces this kind of chain with something much tidier.
 
 ---
 
-## Common Mistakes
+## Linux (Ubuntu) note
 
-### ❌ Forgetting `mut`
+Everything in this session is pure Rust — no OS-specific code. The commands (`cargo run`, etc.) are identical to macOS and Windows. Two practical Ubuntu tips:
 
-```rust
-let counter = 0;
-counter += 1;   // 💥
-```
-
-**Fix:** `let mut counter = 0;`. Or if you only "change" it once (e.g. to convert types), use shadowing: `let counter = counter + 1;`.
-
-### ❌ Confusing shadowing with mutation
-
-```rust
-let x = 5;
-let x = "hello";       // ✅ shadowing, type can change
-// vs
-let mut x = 5;
-x = "hello";           // 💥 cannot change type via mutation
-```
-
-**Rule:** `mut` means "this binding can be reassigned to **a value of the same type**". Shadowing means "I'm declaring a brand-new variable that happens to share a name."
-
-### ❌ Mixing integer types in arithmetic
-
-```rust
-let a: i32 = 5;
-let b: i64 = 10;
-let c = a + b;   // 💥 mismatched types
-```
-
-Rust does not silently promote types. **Fix:** `let c = a as i64 + b;` or pick the same type for both.
-
-### ❌ Treating `f64` like `i32`
-
-```rust
-let n = 10 / 3;          // i32 division → 3
-let n = 10.0 / 3.0;      // f64 division → 3.3333…
-let n = 10 / 3.0;        // 💥 mismatched types
-```
-
-The literal type matters. `10` is an integer; `10.0` is a float.
+- If `cargo run` opens but flashes white briefly before drawing, you're probably on **Wayland** (default since Ubuntu 22.04). That's expected — macroquad runs fine under Wayland via XWayland. Confirm with `echo $XDG_SESSION_TYPE`; if it prints `wayland`, you're good.
+- VS Code's **rust-analyzer** extension is the same as on other OSes. If it says "linker `cc` not found," install build essentials: `sudo apt install -y build-essential`.
 
 ---
 
-## Session Challenge
+## Common mistakes
 
-Modify `examples/chromatic_scale` to:
+### `error[E0384]: cannot assign twice to immutable variable 'selected'`
 
-1. Print **two full octaves** of frequencies from A3 (220 Hz) to A5 (880 Hz).
-2. Add a column showing the **MIDI note number** for each note. (Hint: A4 is MIDI 69. Each semitone up adds 1.)
-3. Highlight the `A` notes (A3, A4, A5) in some way — maybe with a `*` next to them.
+You forgot `mut`. `let selected = SAND;` makes it immutable; `let mut selected = SAND;` lets you reassign it.
 
-> No solution provided for this one — try it yourself. If you get stuck, peek at how `for` loops and `if` work in the cheat sheet ([`resources/cheatsheet.md`](../../resources/cheatsheet.md)).
+### `error[E0308]: mismatched types: expected u8, found integer`
+
+You wrote `const SAND = 1;` without the type annotation. `const` requires you to spell out the type explicitly — Rust won't infer it for constants. Fix: `const SAND: u8 = 1;`.
+
+### Colours look washed out or wrong
+
+You forgot that `Color::new` expects values in `0.0 – 1.0`, not `0 – 255`. If you write `Color::new(255.0, 200.0, 100.0, 1.0)`, every channel saturates at maximum (white). Divide by 255 if you're converting from a hex code: `Color::new(255.0/255.0, 200.0/255.0, 100.0/255.0, 1.0)`.
+
+### Number keys don't switch elements
+
+`is_key_pressed` returns `true` only on the single frame the key transitions from up to down. If you used `is_key_down`, every frame you held `1` would re-set `selected = SAND` (fine in this case, but bad once we add menus). For one-shot actions, use `_pressed`. For sustained actions (mouse drag, holding a key), use `_down`.
+
+### Program crashes with `index out of bounds`
+
+Your bounds check from Session 1 is still there, right? `if row < ROWS && col < COLS` before `grid[row][col] = selected`. Without it, a single off-window click panics. **Bounds-check every indexed access.** It's a discipline that pays off forever.
 
 ---
 
-## Quick Reference
+## Session challenge
 
-| Concept | Syntax |
+Pick one, no solution provided.
+
+1. **Add a fourth element.** Add `const WOOD: u8 = 4;`, give it a brown colour, bind it to key `4`. (You'll use this in Session 11 when fire arrives.)
+2. **Shift+click to fill the whole row.** If the shift key is down, write `selected` to every cell in the same row as the click. (`is_key_down(KeyCode::LeftShift)`)
+3. **Cycle colours.** Make sand's red channel pulse over time: `r = 0.5 + 0.5 * (get_time() as f32).sin()`. Pass that into the `SAND` arm of `cell_colour`. (You'll need to thread the current time through, or just call `get_time()` inside the function — both work.)
+4. **Print the selected element to the terminal** every time it changes. Use `println!("Selected: {}", label);` — `{}` is the Display formatter (we'll cover this properly in Month 2).
+
+---
+
+## Quick reference
+
+| What | Code |
 |---|---|
-| Immutable binding | `let x = 5;` |
-| Mutable binding | `let mut x = 5;` |
-| Type annotation | `let x: i32 = 5;` |
-| Shadowing | `let x = x + 1;` |
-| Float literal | `1.0`, `3.14_f64` |
-| Big integer | `1_000_000` |
-| Hex / binary | `0xff`, `0b1010` |
-| Power | `2.0_f64.powf(1.0/12.0)` |
-| Cast | `let n = 5 as f64;` |
+| Constant | `const SAND: u8 = 1;` |
+| Immutable variable | `let n = 5;` |
+| Mutable variable | `let mut n = 5; n = 6;` |
+| Explicit type | `let x: f32 = 3.14;` |
+| Cast | `(mx / CELL_SIZE) as usize` |
+| `if` as expression | `let s = if n > 0 { "pos" } else { "neg" };` |
+| One-shot key | `is_key_pressed(KeyCode::Key1)` |
+| Sustained key | `is_key_down(KeyCode::LeftShift)` |
+| Custom colour | `Color::new(r, g, b, a)` *(each 0.0–1.0)* |
+| On-screen text | `draw_text("hello", x, y, size, WHITE);` |
 
 ---
 
-## Further Reading
+## DofE log reminder
 
-Curated extra material on the topics covered in this session (Variables, Types, Mutability). All free; all current as of writing.
+Open [`dfe/session-log.md`](../../dfe/session-log.md) (or your printed booklet) and fill in **Session 2**. Two things to capture today:
 
-- [**The Rust Book** — *Variables and Mutability* (3.1)](https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html) — The canonical explanation, with all the edge cases.
-- [**The Rust Book** — *Data Types* (3.2)](https://doc.rust-lang.org/book/ch03-02-data-types.html) — Every scalar and compound type Rust ships with.
-- [**Rust by Example** — *Variable bindings*](https://doc.rust-lang.org/rust-by-example/variable_bindings.html) — Tiny runnable snippets for every concept, side by side with explanations.
-- [**What Every Programmer Should Know About Floating-Point**](https://floating-point-gui.de) — A friendly version of the famous Goldberg paper. Read this before you ever compare two `f64`s with `==`.
-
----
-
-## Stuck?
-
-You're not the first. Three places that work when you're properly stuck:
-
-- [**Rust Discord** — `#beginners`](https://discord.gg/rust-lang-community) (fastest; people are friendly)
-- [**`/r/learnrust`**](https://www.reddit.com/r/learnrust/) (paste your code + the error; usually answered within hours)
-- [**`users.rust-lang.org`**](https://users.rust-lang.org/) (slower; thorough; answers stay searchable for years)
-
-When the compiler error is the thing confusing you, [`resources/compiler-errors.md`](../../resources/compiler-errors.md) translates the most common ones into plain English.
-
-Asking for help isn't cheating — real Rust developers do it daily. Search first; if no luck, post a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example).
-
----
-## DofE Log Reminder
-
-> 📝 Session 2 done. Open [`dfe/session-log.md`](../../dfe/session-log.md), find the Session 2 block, and fill it in. What clicked? What didn't? Five minutes, while it's fresh.
+- What "immutable by default" means in your own words (testing recall is half the value)
+- What surprised you about being able to change one constant and see the whole world change colour
